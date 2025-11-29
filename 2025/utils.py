@@ -54,7 +54,7 @@ class TickersList5B(Base):
         return f"<StockPrice(ticker='{self.ticker}')>"
 
 
-def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities):
+def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_etfs):
     list_of_tickers = [t.ticker for t in session.query(TickersList2B).all()]
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
@@ -186,7 +186,9 @@ list_of_etfs = [
 ]
 
 
-list_of_tickers_2B = creating_list_of_tickers_2B(list_of_indexes, list_of_commodities)
+list_of_tickers_2B = creating_list_of_tickers_2B(
+    list_of_indexes, list_of_commodities, list_of_etfs
+)
 list_of_tickers_5B = creating_list_of_tickers_5B()
 list_of_tickers_nasdaq = creating_list_of_tickers_nasdaq()
 list_of_tickers_nyse = creating_list_of_tickers_nyse()

@@ -1,12 +1,14 @@
+import logging
+import os
 from datetime import date, timedelta
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy import Float, Date
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.sql import and_
+
 import pandas as pd
-import logging, os
 from dotenv import load_dotenv
-from utils import list_of_indexes, list_of_commodities
+from sqlalchemy import Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.sql import and_
+
+from utils import list_of_commodities, list_of_etfs, list_of_indexes
 
 load_dotenv()
 
@@ -62,9 +64,22 @@ class CommoditiesWeeklyChange(Base):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
 
 
+class EtfsWeeklyChange(Base):
+    __tablename__ = "etfs_weekly_change"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    one_week_pct_change = Column(Float, nullable=False)
+    four_week_pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
 # engine = create_engine(os.getenv("DB_STOCK_DATA"))
-# Base.metadata.create_all(engine)
+Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -150,14 +165,51 @@ def weekly_commodity_change(tickers, last_friday, four_weeks_ago_friday):
     logging.info(f"Finished 4 weeks CommoditiesWeeklyChange change populating")
 
 
+def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
+    for ticker in tickers:
+        try:
+            last_friday_data = (
+                session.query(SourceData)
+                .filter(
+                    SourceData.ticker == ticker,
+                    SourceData.date == last_friday,
+                )
+                .first()
+            )
+
+            four_weeks_before_friday_data = (
+                session.query(SourceData)
+                .filter(
+                    SourceData.ticker == ticker,
+                    SourceData.date == four_weeks_ago_friday,
+                )
+                .first()
+            )
+
+            four_weeks_returns = (
+                (last_friday_data.close - four_weeks_before_friday_data.close)
+                / four_weeks_before_friday_data.close
+            ) * 100
+
+            session.query(EtfsWeeklyChange).filter_by(
+                ticker=ticker, date=last_friday
+            ).update({"four_week_pct_change": four_weeks_returns})
+
+            session.commit()
+
+        except AttributeError:
+            print("Bad ticker:", ticker)
+            logging.error(
+                f"Bad ticker: {ticker} in counting 4 weeks EtfsWeeklyChange change"
+            )
+    logging.info(f"Finished 4 weeks CommoditiesWeeklyChange change populating")
+
+
 last_friday = date.today() - timedelta(days=1)
 previous_friday = date.today() - timedelta(days=8)
 four_weeks_ago_friday = date.today() - timedelta(days=29)
-print(last_friday)
-print(four_weeks_ago_friday)
 
-
-# ------INDEXES----------
+# -----INDEXES----------
 query_indexes = session.query(
     SourceData.date, SourceData.ticker, SourceData.weekly_change
 ).filter(and_(SourceData.ticker.in_(list_of_indexes), SourceData.date == last_friday))
@@ -200,10 +252,30 @@ df_weekly_commodities_sorted = df_commodities.sort_values(
     by="Weekly_change", ascending=False
 )
 
-print(df_weekly_commodities_sorted)
-
 for _, row in df_weekly_commodities_sorted.iterrows():
     stock_data = CommoditiesWeeklyChange(
+        date=row["Date"],
+        ticker=row["Ticker"],
+        one_week_pct_change=row["Weekly_change"],
+    )
+    session.add(stock_data)
+
+
+# -----ETFs----------
+query_etfs = session.query(
+    SourceData.date, SourceData.ticker, SourceData.weekly_change
+).filter(and_(SourceData.ticker.in_(list_of_etfs), SourceData.date == last_friday))
+
+results_etfs = query_etfs.all()
+
+df_etfs = pd.DataFrame(results_etfs, columns=["Date", "Ticker", "Weekly_change"])
+df_etfs["Date"] = pd.to_datetime(df_etfs["Date"]).dt.date
+df_etfs = df_etfs.dropna()
+
+df_weekly_etfs_sorted = df_etfs.sort_values(by="Weekly_change", ascending=False)
+
+for _, row in df_weekly_etfs_sorted.iterrows():
+    stock_data = EtfsWeeklyChange(
         date=row["Date"],
         ticker=row["Ticker"],
         one_week_pct_change=row["Weekly_change"],
@@ -214,13 +286,14 @@ session.commit()
 
 weekly_index_change(list_of_indexes, last_friday, four_weeks_ago_friday)
 weekly_commodity_change(list_of_commodities, last_friday, four_weeks_ago_friday)
+weekly_etfs_change(list_of_etfs, last_friday, four_weeks_ago_friday)
 
 session.close()
 
 logging.info(f"Finished indexes weekly DB populating")
 
-import time
 import runpy
+import time
 
 logging.info("5 seconds sleep after indexes weekly is done")
 time.sleep(5)

@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
-from sqlalchemy.orm import sessionmaker, declarative_base
-from datetime import date, timedelta, datetime
-import logging, os
+import logging
+import os
+from datetime import date, datetime, timedelta
 
-from telegram import Update
-from telegram.ext import ContextTypes, Application, CommandHandler
 from dotenv import load_dotenv
+from sqlalchemy import Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 load_dotenv()
 
@@ -120,7 +121,7 @@ class IndexesWeeklyChange(Base):
     four_week_pct_change = Column(Float, nullable=True)
 
     def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
 
 
 class CommoditiesWeeklyChange(Base):
@@ -133,7 +134,20 @@ class CommoditiesWeeklyChange(Base):
     four_week_pct_change = Column(Float, nullable=True)
 
     def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class EtfsWeeklyChange(Base):
+    __tablename__ = "etfs_weekly_change"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    one_week_pct_change = Column(Float, nullable=False)
+    four_week_pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
 
 
 try:
@@ -359,6 +373,34 @@ async def weekly_indexes(context: ContextTypes.DEFAULT_TYPE):
         logger.error("weekly_indexes Error: %s", e)
 
 
+async def weekly_etfs(context: ContextTypes.DEFAULT_TYPE):
+    try:
+        # ------ETFS----------
+        query_result_etfs = (
+            session.query(
+                EtfsWeeklyChange.date,
+                EtfsWeeklyChange.ticker,
+                EtfsWeeklyChange.one_week_pct_change,
+                EtfsWeeklyChange.four_week_pct_change,
+            )
+            .filter(EtfsWeeklyChange.date == previous_day)
+            .all()
+        )
+        weekly_etfs_msg += "\n\nThis week etfs performance:\n\n"
+        weekly_etfs_msg += "          1W  |  4Ws\n"
+        for qe in query_result_etfs:
+            weekly_etfs_msg += f"{qe.ticker}: {round(qe.one_week_pct_change,2)}% | {round(qe.four_week_pct_change,2)}%\n"
+
+        await context.bot.send_message(
+            chat_id=os.getenv("CJT_GROUP_ID"),
+            message_thread_id=os.getenv("TICKER_BOT_ROOM"),
+            text=weekly_etfs_msg,
+        )
+        logging.info("weekly_etfs successly sent")
+    except Exception as e:
+        logger.error("weekly_etfs Error: %s", e)
+
+
 async def market_breadth(context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await context.bot.send_photo(
@@ -382,9 +424,10 @@ if today.lower() == "tuesday":
     job_queue.run_once(tuesday_number_of_tickers, 1)
 if today.lower() == "saturday":
     job_queue.run_once(weekly_indexes, 1)
-job_queue.run_once(weekly_top20, 3)
-job_queue.run_once(weekly_bottom20, 5)
-job_queue.run_once(ytd_top20, 7)
+    job_queue.run_once(weekly_etfs, 2)
+job_queue.run_once(weekly_top20, 4)
+job_queue.run_once(weekly_bottom20, 6)
+job_queue.run_once(ytd_top20, 8)
 job_queue.run_once(ytd_bottom20, 10)
 job_queue.run_once(last_correction_top20, 13)
 job_queue.run_once(last_correction_bottom20, 16)
