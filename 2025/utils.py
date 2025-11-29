@@ -1,9 +1,10 @@
 import logging
 import os
 from datetime import date, timedelta
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import create_engine, Column, Integer, String, Boolean
+
 from dotenv import load_dotenv
+from sqlalchemy import Boolean, Column, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
@@ -112,6 +113,78 @@ list_of_indexes = [
     "EWS",
 ]
 list_of_commodities = ["GLD", "SLV", "COPX", "USO"]
+
+list_of_etfs = [
+    "XLC",
+    "VOX",
+    "IYZ",
+    "FCOM",
+    "XLY",
+    "VCR",
+    "IYC",
+    "FDIS",
+    "XLP",
+    "VDC",
+    "IYK",
+    "FSTA",
+    "XLE",
+    "VDE",
+    "IYE",
+    "FENY",
+    "XLF",
+    "VFH",
+    "IYF",
+    "FNCL",
+    "XLV",
+    "VHT",
+    "IYH",
+    "FHLC",
+    "XLI",
+    "VIS",
+    "IYJ",
+    "FIDU",
+    "XLK",
+    "VGT",
+    "IYW",
+    "FTEC",
+    "XLB",
+    "VAW",
+    "IYM",
+    "FMAT",
+    "XLRE",
+    "VNQ",
+    "IYR",
+    "FREL",
+    "XLU",
+    "VPU",
+    "IDU",
+    "FUTY",
+    "IBUY",
+    "FINX",
+    "IBB",
+    "IDNA",
+    "IHI",
+    "ITA",
+    "SOXX",
+    "IGV",
+    "CIBR",
+    "PICK",
+    "ICF",
+    "ICLN",
+    "PAVE",
+    "IFRA",
+    "SMH",
+    "XBI",
+    "XHB",
+    "ITB",
+    "KRE",
+    "XOP",
+    "GDX",
+    "XAR",
+    "HACK",
+    "TAN",
+]
+
 
 list_of_tickers_2B = creating_list_of_tickers_2B(list_of_indexes, list_of_commodities)
 list_of_tickers_5B = creating_list_of_tickers_5B()
