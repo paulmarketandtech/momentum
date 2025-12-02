@@ -58,6 +58,7 @@ def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_et
     list_of_tickers = [t.ticker for t in session.query(TickersList2B).all()]
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
+    list_of_tickers.extend(list_of_etfs)
     logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     return list_of_tickers
@@ -194,4 +195,3 @@ list_of_tickers_nasdaq = creating_list_of_tickers_nasdaq()
 list_of_tickers_nyse = creating_list_of_tickers_nyse()
 
 session.close()
-# print(list_of_tickers_2B)

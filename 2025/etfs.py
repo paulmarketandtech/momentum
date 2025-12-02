@@ -48,7 +48,7 @@ def download_tickers_from_yf(tickers, last_date):
             tickers,
             group_by="Ticker",
             start=last_date,
-            end=date(2025, 11, 27),
+            end=date(2025, 12, 2),
             # end=date.today(),
         )
         df = df.stack(level=0).rename_axis(["Date", "Ticker"]).reset_index(level=1)
@@ -164,7 +164,7 @@ list_of_etfs = [
     "TAN",
 ]
 
-last_date = date(2025, 10, 31)
+last_date = date(2025, 10, 28)
 
 # download_tickers_from_yf(list_of_etfs, last_date)
 
@@ -172,7 +172,7 @@ engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
 
 Session = sessionmaker(bind=engine)
 session = Session()
-read_df_from_csv_and_populate_db(last_date)
+# read_df_from_csv_and_populate_db(last_date)
 session.close()
 
 
