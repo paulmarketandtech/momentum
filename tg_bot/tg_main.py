@@ -386,7 +386,7 @@ async def weekly_etfs(context: ContextTypes.DEFAULT_TYPE):
             .filter(EtfsWeeklyChange.date == previous_day)
             .all()
         )
-        weekly_etfs_msg += "\n\nThis week etfs performance:\n\n"
+        weekly_etfs_msg = "\n\nThis week etfs performance:\n\n"
         weekly_etfs_msg += "          1W  |  4Ws\n"
         for qe in query_result_etfs:
             weekly_etfs_msg += f"{qe.ticker}: {round(qe.one_week_pct_change,2)}% | {round(qe.four_week_pct_change,2)}%\n"

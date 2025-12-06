@@ -202,7 +202,7 @@ def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
             logging.error(
                 f"Bad ticker: {ticker} in counting 4 weeks EtfsWeeklyChange change"
             )
-    logging.info(f"Finished 4 weeks CommoditiesWeeklyChange change populating")
+    logging.info(f"Finished 4 weeks EtfsWeeklyChange change populating")
 
 
 last_friday = date.today() - timedelta(days=1)
