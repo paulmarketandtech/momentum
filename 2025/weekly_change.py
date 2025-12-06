@@ -1,11 +1,19 @@
-from datetime import date, timedelta, datetime
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy import Float, Date, Boolean
-from sqlalchemy.orm import sessionmaker, declarative_base
+import logging
+import os
+from datetime import date, datetime, timedelta
+
 import pandas as pd
-import logging, os
 from dotenv import load_dotenv
-from utils import previous_day, list_of_tickers_5B, list_of_indexes, list_of_commodities
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from utils import (
+    list_of_commodities,
+    list_of_etfs,
+    list_of_indexes,
+    list_of_tickers_5B,
+    previous_day,
+)
 
 load_dotenv()
 
@@ -78,9 +86,12 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-def creating_list_of_tickers(list_of_tickers, list_of_indexes, list_of_commodities):
+def creating_list_of_tickers(
+    list_of_tickers, list_of_indexes, list_of_commodities, list_of_etfs
+):
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
+    list_of_tickers.extend(list_of_etfs)
     logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     return list_of_tickers
@@ -134,7 +145,7 @@ today = datetime.today().strftime("%A")
 last_friday = date.today() - timedelta(days=days_shift[today.lower()])
 
 list_of_tickers = creating_list_of_tickers(
-    list_of_tickers_5B, list_of_indexes, list_of_commodities
+    list_of_tickers_5B, list_of_indexes, list_of_commodities, list_of_etfs
 )
 weekly_change(list_of_tickers, previous_day, last_friday)
 
@@ -176,8 +187,8 @@ session.close()
 
 logging.info(f"Finished best/worst weekly DB populating")
 
-import time
 import runpy
+import time
 
 print("5 seconds sleep after weekly is done")
 time.sleep(5)
