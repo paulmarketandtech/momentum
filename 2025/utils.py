@@ -184,6 +184,8 @@ list_of_etfs = [
     "XAR",
     "HACK",
     "TAN",
+    "ROBO",
+    "BOTZ",
 ]
 
 

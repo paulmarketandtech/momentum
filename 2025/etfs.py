@@ -2,7 +2,7 @@ import logging
 import os
 import runpy
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 import yfinance as yf
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from utils import list_of_tickers_2B, previous_day
+previous_day = date.today() - timedelta(days=1)
 
 load_dotenv()
 
@@ -164,7 +164,7 @@ list_of_etfs = [
     "TAN",
 ]
 
-last_date = date(2025, 10, 28)
+last_date = date(2025, 11, 28)
 
 # download_tickers_from_yf(list_of_etfs, last_date)
 
@@ -174,11 +174,3 @@ Session = sessionmaker(bind=engine)
 session = Session()
 # read_df_from_csv_and_populate_db(last_date)
 session.close()
-
-
-# add IREN CIFR - DONE
-# download yf data for jan 1 - DONE
-# remove IREN CIFR - DONE
-# download yf data from Oct 31 to Nov 27
-# populate DB
-# add etf list to tickers
