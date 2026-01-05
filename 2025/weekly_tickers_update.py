@@ -216,15 +216,6 @@ def insert_tickers_lt5B(lt_5B):
     except Exception as e:
         logging.error(f"Step 7 Error: {e}")
 
-
-# Last step. Check DBs length after
-def check_query_db_length(before_after):
-    query_result_2B = session.query(TickersList2B).all()
-    query_result_5B = session.query(TickersList5B).all()
-    logging.info(f"Number of tickers lt 2B {before_after}: {len(query_result_2B)}")
-    logging.info(f"Number of tickers lt 5B {before_after}: {len(query_result_5B)}")
-
-
 def main():
     logging.info("Starting weekly_tickers_update.py")
     check_query_db_length("BEFORE")
@@ -253,9 +244,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-TODO:
-merge to master
-delete weekly_5B_tickers_update.py and creating_list_of_tickers.py files
-"""
