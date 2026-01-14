@@ -10,7 +10,7 @@ load_dotenv()
 
 previous_day = date.today() - timedelta(days=1)
 
-YTD_DATE = date(2025, 1, 2)
+YTD_DATE = date(2026, 1, 2)
 PREVIOUS_CORRECTION_DATE = date(2024, 11, 5)
 LAST_CORRECTION_DATE = date(2025, 4, 7)
 

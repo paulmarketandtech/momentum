@@ -216,6 +216,11 @@ def insert_tickers_lt5B(lt_5B):
     except Exception as e:
         logging.error(f"Step 7 Error: {e}")
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> upstream/main
 def main():
     logging.info("Starting weekly_tickers_update.py")
     check_query_db_length("BEFORE")
@@ -243,4 +248,8 @@ def main():
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> upstream/main
