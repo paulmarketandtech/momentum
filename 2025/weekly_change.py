@@ -79,8 +79,8 @@ class Weekly20Worst(Base):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
 
 
-# engine = create_engine(os.getenv("DB_ABSOLUTE_PATH")) # prod
-engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
+engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
+# engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
 # Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)

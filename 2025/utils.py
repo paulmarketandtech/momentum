@@ -20,8 +20,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-# engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
+engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
+# engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
 # Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
