@@ -206,8 +206,24 @@ def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
 
 
 last_friday = date.today() - timedelta(days=1)
+
 previous_friday = date.today() - timedelta(days=8)
+how_many_records_previous_friday = (
+    session.query(SourceData.ticker).filter(SourceData.date == previous_friday).all()
+)
+if len(how_many_records_previous_friday) == 0:
+    previous_friday = date.today() - timedelta(days=9)
+
+
 four_weeks_ago_friday = date.today() - timedelta(days=29)
+how_many_records_four_weeks_ago = (
+    session.query(SourceData.ticker)
+    .filter(SourceData.date == four_weeks_ago_friday)
+    .all()
+)
+if len(how_many_records_four_weeks_ago) == 0:
+    four_weeks_ago_friday = date.today() - timedelta(days=30)
+
 
 # -----INDEXES----------
 query_indexes = session.query(

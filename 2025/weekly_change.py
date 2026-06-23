@@ -79,7 +79,8 @@ class Weekly20Worst(Base):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
 
 
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
+# engine = create_engine(os.getenv("DB_ABSOLUTE_PATH")) # prod
+engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
 # Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
@@ -144,6 +145,19 @@ days_shift = {
 today = datetime.today().strftime("%A")
 last_friday = date.today() - timedelta(days=days_shift[today.lower()])
 
+"""
+Checks if given Friday was a trading day.
+If no (DB is empty for that day), then look at day before.
+For now it will only go back to Thursday. In case if Friday and Thursday will be off than it has to be handled manualy
+"""
+
+how_many_records = (
+    session.query(SourceData.ticker).filter(SourceData.date == last_friday).all()
+)
+if len(how_many_records) == 0:
+    last_friday = date.today() - timedelta(days=days_shift[today.lower()] + 1)
+
+
 list_of_tickers = creating_list_of_tickers(
     list_of_tickers_5B, list_of_indexes, list_of_commodities, list_of_etfs
 )
@@ -193,6 +207,7 @@ import time
 print("5 seconds sleep after weekly is done")
 time.sleep(5)
 today = datetime.today().strftime("%A")
+
 try:
     if today.lower() == "saturday":
         runpy.run_path(path_name=os.getenv("WEEKLY_INDEXES_CHANGE_PATH"))
