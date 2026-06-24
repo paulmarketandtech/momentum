@@ -28,3 +28,10 @@ yf_weekly_tickers_update.py
 * update_MC_from_YF(df) -> void 
     - loops through all tickers and dowloads MC from YF 
 """
+
+
+"""
+TODO on PROD 
+create paths: weekly update -> monthly update 
+update .env with those paths 
+"""
