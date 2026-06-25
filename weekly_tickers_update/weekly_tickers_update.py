@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 import pandas as pd
 import yfinance as yf
@@ -33,18 +34,6 @@ Base = declarative_base()
 """
 WORKFLOW
 updates MC and exchange from YF
-list of tickers for 2B and 5B are made in utils 
-done?
-"""
-
-"""
-TODO: 
-cp DB from server 
-and the whole tickers update:
-create a new table,
-populate monthly from a file 
-run weekly 
-and check if utils work 
 """
 
 
@@ -52,7 +41,7 @@ class AllTickersMonthlyUpdate(Base):
     __tablename__ = "all_tickers_monthly_update"
 
     id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)  # date when updated
+    date = Column(Date, nullable=False)
     ticker = Column(String, nullable=False, index=True)
     market_cap = Column(Integer, nullable=False)
     nasdaq_tickers = Column(Boolean, nullable=False)
@@ -69,30 +58,35 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-# 0. Check DBs length before
 def check_query_db_length(before_after):
     query_result_all = session.query(AllTickersMonthlyUpdate).all()
     logging.info(f"Number of tickers all {before_after}: {len(query_result_all)}")
 
 
-# ONLY this stays?
 def update_MC_and_exchanges_from_YF():
     list_of_tickers = [t.ticker for t in session.query(AllTickersMonthlyUpdate).all()]
 
     nasdaq_ticker = 0
     nyse_ticker = 0
     for ticker in list_of_tickers:
+        time.sleep(0.5)
         try:
             info = yf.Ticker(ticker).info
             market_cap = info.get("marketCap")
             exchange_name = (
                 info.get("fullExchangeName") or info.get("exchange") or "Unknown"
             )
-            if exchange_name == "NasdaqGS" or exchange_name == "NMS":
+            # Nasdaq options in YF: NasdaqGS, NasdaqGM, NasdaCM
+            if (
+                exchange_name.lower().startswith("nasdaq")
+                or exchange_name == "NMS"
+                or exchange_name == "NGM"
+            ):
                 nasdaq_ticker = 1
                 nyse_ticker = 0
 
-            if exchange_name == "NYSE" or exchange_name == "NYQ":
+            # Nyse options in YF: NYSE, Nyse Amrican
+            if exchange_name.lower().startswith("nyse") or exchange_name == "NYQ":
                 nasdaq_ticker = 0
                 nyse_ticker = 1
 
@@ -106,7 +100,10 @@ def update_MC_and_exchanges_from_YF():
                 }
             )
         except Exception as e:
-            print(f"Error fetching {ticker}: {e}")
+            logging.warning(f"Error fetching {ticker}: {e}")
+            logging.warning(
+                f"ticker: {ticker}, MC: {market_cap}, exchange: {exchange_name}\n nasdaq_ticker: {nasdaq_ticker}, nyse_ticker: {nyse_ticker}"
+            )
             market_cap = None
             exchange_name = None
 
@@ -118,8 +115,6 @@ def main():
     logging.info("Starting weekly_tickers_update.py")
     check_query_db_length("BEFORE")
     update_MC_and_exchanges_from_YF()
-
-    logging.info("Working on lt2B table")
 
     check_query_db_length("AFTER")
 

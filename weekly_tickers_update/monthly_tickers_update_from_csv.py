@@ -36,7 +36,7 @@ session = Session()
 ABOVE_MARKET_CAP = 200_000_000
 
 """
-Once a month I will download manually csv with all tickers
+Once a month (at the end) dowload manually spreadsheet from website https://www.nasdaq.com/market-activity/stocks/screener
 and based on them MC will be updated 
 """
 
@@ -45,7 +45,7 @@ class AllTickersMonthlyUpdate(Base):
     __tablename__ = "all_tickers_monthly_update"
 
     id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)  # date when updated
+    date = Column(Date, nullable=False)
     ticker = Column(String, nullable=False, index=True)
     market_cap = Column(Integer, nullable=False)
     nasdaq_tickers = Column(Boolean, nullable=False)
@@ -55,7 +55,7 @@ class AllTickersMonthlyUpdate(Base):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
 
 
-# Base.metadata.create_all(engine)
+Base.metadata.create_all(engine)
 
 
 # 0. Check DBs length before
@@ -67,7 +67,7 @@ def check_query_db_length(before_after):
     print(len(query_result))
 
 
-# 1. Delete all records from tables list_of_tickers_lt_2B and list_of_tickers_lt_5B
+# 1. Delete all records from table AllTickersMonthlyUpdate
 def delete_tickers_from_all_tickers_monthly():
     try:
         session.query(AllTickersMonthlyUpdate).delete()
@@ -77,18 +77,18 @@ def delete_tickers_from_all_tickers_monthly():
         logging.error(f"Step1 Error {e}")
 
 
-# 2A. Getting the name of file with all tickers
+# 2. Getting the name of file with all tickers
 def getting_file_name_with_all_tickers():
     string_lenght = []
     try:
         list_files = os.listdir(os.getenv("MONTHLY_TICKERS_UPDATE_PATH"))
-        logging.info(f"Step 2A done. Working on file: {list_files[0]}")
+        logging.info(f"Step 2 done. Working on file: {list_files[0]}")
         return list_files[0]
     except Exception as e:
         logging.error(f"Step 2A Error: {e}")
 
 
-# 2B. Create DF from a file with tickers with Market Cap > ABOVE_MARKET_CAP
+# 3. Create DF from a file with tickers with Market Cap > ABOVE_MARKET_CAP
 def create_all_tickers_df_from_file(filename):
     try:
         filename_uri = f"{os.getenv('MONTHLY_TICKERS_UPDATE_PATH')}/{filename}"
@@ -96,13 +96,15 @@ def create_all_tickers_df_from_file(filename):
         df = df_csv.dropna(subset=["Market Cap"], inplace=False)
         df_above_given_MC = df[df["Market Cap"] >= ABOVE_MARKET_CAP]
         df_ticker_MC = df_above_given_MC[["Symbol", "Market Cap"]]
-        logging.info("Step 2B done. DF with tickers and Market Cap created")
+        logging.info(
+            f"Step 3 done. DF with tickers and Market Cap > {ABOVE_MARKET_CAP} created"
+        )
         return df_ticker_MC
     except Exception as e:
-        logging.error(f"Step 2B Error: {e}")
+        logging.error(f"Step 3 Error: {e}")
 
 
-# 3. Populate DB with tickers and Market Cap.
+# 4. Populate DB with tickers and Market Cap.
 def insert_tickers_allTickers_table(df):
     try:
         for _, row in df.iterrows():
@@ -116,14 +118,14 @@ def insert_tickers_allTickers_table(df):
             session.add(market_cap)
 
         session.commit()
-        logging.info(f"Step 3 done. ABOVE_MARKET_CAP {ABOVE_MARKET_CAP} popuated")
+        logging.info(f"Step 4 done. ABOVE_MARKET_CAP {ABOVE_MARKET_CAP} popuated")
     except Exception as e:
-        logging.error(f"Step 3 Error: {e}")
+        logging.error(f"Step 4 Error: {e}")
 
 
 def main():
     check_query_db_length("BEFORE")
-    # delete_tickers_from_all_tickers_monthly()
+    delete_tickers_from_all_tickers_monthly()
     filename = getting_file_name_with_all_tickers()
     df_above_given_MC = create_all_tickers_df_from_file(filename)
     insert_tickers_allTickers_table(df_above_given_MC)
