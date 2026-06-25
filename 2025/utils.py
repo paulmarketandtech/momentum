@@ -30,32 +30,33 @@ session = Session()
 Base = declarative_base()
 
 
-class TickersList2B(Base):
-    __tablename__ = "list_of_tickers_lt_2B"
+class AllTickersMonthlyUpdate(Base):
+    __tablename__ = "all_tickers_monthly_update"
 
     id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)  # date when updated
     ticker = Column(String, nullable=False, index=True)
+    market_cap = Column(Integer, nullable=False)
     nasdaq_tickers = Column(Boolean, nullable=False)
     nyse_tickers = Column(Boolean, nullable=False)
 
     def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
 
 
-class TickersList5B(Base):
-    __tablename__ = "list_of_tickers_lt_5B"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    nasdaq_tickers = Column(Boolean, nullable=False)
-    nyse_tickers = Column(Boolean, nullable=False)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
+"""
+For now it will stay 2B and 5B 
+but in the future 2B will probably be gone and 5B will be dynamic
+"""
 
 
 def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_etfs):
-    list_of_tickers = [t.ticker for t in session.query(TickersList2B).all()]
+    list_of_tickers = [
+        t.ticker
+        for t in session.query(AllTickersMonthlyUpdate)
+        .filter(AllTickersMonthlyUpdate.market_cap > 2_000_000_000)
+        .all()
+    ]
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
     list_of_tickers.extend(list_of_etfs)
@@ -65,7 +66,12 @@ def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_et
 
 
 def creating_list_of_tickers_5B():
-    list_of_tickers = [t.ticker for t in session.query(TickersList5B).all()]
+    list_of_tickers = [
+        t.ticker
+        for t in session.query(AllTickersMonthlyUpdate)
+        .filter(AllTickersMonthlyUpdate.market_cap > 5_000_000_000)
+        .all()
+    ]
     logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     return list_of_tickers
@@ -74,8 +80,8 @@ def creating_list_of_tickers_5B():
 def creating_list_of_tickers_nasdaq():
     nasdaq_list_of_tickers = [
         t.ticker
-        for t in session.query(TickersList5B)
-        .filter(TickersList5B.nasdaq_tickers == True)
+        for t in session.query(AllTickersMonthlyUpdate)
+        .filter(AllTickersMonthlyUpdate.nasdaq_tickers == True)
         .all()
     ]
     return nasdaq_list_of_tickers
@@ -84,13 +90,14 @@ def creating_list_of_tickers_nasdaq():
 def creating_list_of_tickers_nyse():
     nyse_list_of_tickers = [
         t.ticker
-        for t in session.query(TickersList5B)
-        .filter(TickersList5B.nyse_tickers == True)
+        for t in session.query(AllTickersMonthlyUpdate)
+        .filter(AllTickersMonthlyUpdate.nyse_tickers == True)
         .all()
     ]
     return nyse_list_of_tickers
 
 
+# create tables with those tickers?
 list_of_indexes = [
     "QQQ",
     "SPY",
