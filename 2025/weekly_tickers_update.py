@@ -1,10 +1,21 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
-from sqlalchemy import Boolean, Table, MetaData
-from sqlalchemy.orm import sessionmaker, declarative_base
+import logging
+import os
+
 import pandas as pd
-import os, logging
-from sqlalchemy import and_
 from dotenv import load_dotenv
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    Float,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    and_,
+    create_engine,
+)
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
@@ -29,6 +40,20 @@ WORKFLOW:
     lt5B table
 Step 6: Select tickers with market_cap > 5B from table lt2B
 Step 7: Populate table lt5B with tickers with market_cap > 5B - copied from lt_2B
+Last step. Check DBs length after
+"""
+
+"""
+New WORKFLOW:
+it works once, every Sunday (early in the morning)
+0. Check DBs length before
+1. Creates a list of all tickers from table all_tickers_monthly_update.
+2. Iterates through them and for each download from YF 'marketCap' and 'fullExchangeName'
+    and creates a DF with columns: ticker, marketCap, ExchangeName
+    (YF provides NYSE and NasdaqGS)
+3. Filter DF with tickers > $2B 
+4. Populate list_of_tickers_lt_2B
+5. Populate list_of_tickers_lt_5B
 Last step. Check DBs length after
 """
 
@@ -215,7 +240,6 @@ def insert_tickers_lt5B(lt_5B):
         logging.info("Step 7 done. Tickers with market_cap > 5B populated in lt5B")
     except Exception as e:
         logging.error(f"Step 7 Error: {e}")
-
 
 
 def main():
