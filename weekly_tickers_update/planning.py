@@ -29,6 +29,27 @@ yf_weekly_tickers_update.py
     - loops through all tickers and dowloads MC from YF 
 """
 
+"""
+Old workflow:
+once a week download csv with all tickers,
+based on that, create list of tickers > $2B -> populate DB/list_of_tickers_lt_2B,
+based on that, create list of tickers > $5B -> populate DB/list_of_tickers_lt_5B,
+
+New temp workflow:
+once a month download csv with all tickers,
+based on that populate DB/list_of_all_tickers with those above $100M (probably will be $200M),
+Once a week, on Sunday update MC from YF
+based on that, create list of tickers > $2B -> populate DB/list_of_tickers_lt_2B,
+based on that, create list of tickers > $5B -> populate DB/list_of_tickers_lt_5B,
+
+Desired workflow:
+similar to temp but have to decrease those $2B and $5B
+"""
+
+"""
+TODO now.
+monthly update is probably almost done so update weekly update so it will download data from YF
+"""
 
 """
 TODO on PROD 

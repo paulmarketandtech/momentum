@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import date
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -29,11 +30,10 @@ Base = declarative_base()
 
 # engine = create_engine(os.getenv("DB_STOCK_DATA")) # dev
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-# Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-ABOVE_MARKET_CAP = 100_000_000
+ABOVE_MARKET_CAP = 200_000_000
 
 """
 Once a month I will download manually csv with all tickers
@@ -48,9 +48,14 @@ class AllTickersMonthlyUpdate(Base):
     date = Column(Date, nullable=False)  # date when updated
     ticker = Column(String, nullable=False, index=True)
     market_cap = Column(Integer, nullable=False)
+    nasdaq_tickers = Column(Boolean, nullable=False)
+    nyse_tickers = Column(Boolean, nullable=False)
 
     def __repr__(self):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
+
+
+# Base.metadata.create_all(engine)
 
 
 # 0. Check DBs length before
@@ -59,6 +64,7 @@ def check_query_db_length(before_after):
     logging.info(
         f"Number of all tickers with MC > {ABOVE_MARKET_CAP}: {before_after}: {len(query_result)}"
     )
+    print(len(query_result))
 
 
 # 1. Delete all records from tables list_of_tickers_lt_2B and list_of_tickers_lt_5B
@@ -97,13 +103,15 @@ def create_all_tickers_df_from_file(filename):
 
 
 # 3. Populate DB with tickers and Market Cap.
-def insert_tickers_lt2B(df):
+def insert_tickers_allTickers_table(df):
     try:
         for _, row in df.iterrows():
             market_cap = AllTickersMonthlyUpdate(
                 ticker=row["Symbol"],
                 market_cap=row["Market Cap"],
                 date=date.today(),
+                nasdaq_tickers=False,
+                nyse_tickers=False,
             )
             session.add(market_cap)
 
@@ -111,3 +119,16 @@ def insert_tickers_lt2B(df):
         logging.info(f"Step 3 done. ABOVE_MARKET_CAP {ABOVE_MARKET_CAP} popuated")
     except Exception as e:
         logging.error(f"Step 3 Error: {e}")
+
+
+def main():
+    check_query_db_length("BEFORE")
+    # delete_tickers_from_all_tickers_monthly()
+    filename = getting_file_name_with_all_tickers()
+    df_above_given_MC = create_all_tickers_df_from_file(filename)
+    insert_tickers_allTickers_table(df_above_given_MC)
+    check_query_db_length("AFTER")
+
+
+if __name__ == "__main__":
+    main()

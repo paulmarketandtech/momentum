@@ -2,6 +2,7 @@ import logging
 import os
 
 import pandas as pd
+import yfinance as yf
 from dotenv import load_dotenv
 from sqlalchemy import (
     Boolean,
@@ -46,8 +47,9 @@ Last step. Check DBs length after
 """
 New WORKFLOW:
 it works once, every Sunday (early in the morning)
-0. Check DBs length before
-1. Creates a list of all tickers from table all_tickers_monthly_update.
+1. Check DBs length before
+2. Delete all records from tables list_of_tickers_lt_2B and list_of_tickers_lt_5B
+3. Creates a list of all tickers from table all_tickers_monthly_update.
 2. Iterates through them and for each download from YF 'marketCap' and 'fullExchangeName'
     and creates a DF with columns: ticker, marketCap, ExchangeName
     (YF provides NYSE and NasdaqGS)
@@ -56,6 +58,20 @@ it works once, every Sunday (early in the morning)
 5. Populate list_of_tickers_lt_5B
 Last step. Check DBs length after
 """
+
+
+class AllTickersMonthlyUpdate(Base):
+    __tablename__ = "all_tickers_monthly_update"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)  # date when updated
+    ticker = Column(String, nullable=False, index=True)
+    market_cap = Column(Integer, nullable=False)
+    nasdaq_tickers = Column(Boolean, nullable=False)
+    nyse_tickers = Column(Boolean, nullable=False)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
 
 
 class TickersList2B(Base):
@@ -83,22 +99,6 @@ class TickersList5B(Base):
         return f"<StockPrice(ticker='{self.ticker}')>"
 
 
-class StockData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    open = Column(Float, nullable=False)
-    volume = Column(Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
-
-
 # engine = create_engine(os.getenv("DB_STOCK_DATA")) # dev
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
 # Base.metadata.create_all(engine)
@@ -108,8 +108,10 @@ session = Session()
 
 # 0. Check DBs length before
 def check_query_db_length(before_after):
+    query_result_all = session.query(AllTickersMonthlyUpdate).all()
     query_result_2B = session.query(TickersList2B).all()
     query_result_5B = session.query(TickersList5B).all()
+    logging.info(f"Number of tickers all {before_after}: {len(query_result_all)}")
     logging.info(f"Number of tickers lt 2B {before_after}: {len(query_result_2B)}")
     logging.info(f"Number of tickers lt 5B {before_after}: {len(query_result_5B)}")
 
@@ -125,19 +127,43 @@ def delete_tickers_from_lt2B_and_lt5B():
         logging.error(f"Step1 Error {e}")
 
 
-# 2A. Getting the name of file with all tickers
-def getting_file_name_with_all_tickers():
-    string_lenght = []
-    try:
-        list_files = os.listdir(os.getenv("WEEKLY_TICKERS_UPDATE_PATH"))
-        for string in list_files:
-            string_lenght.append(len(string))
-        logging.info(
-            f"Step 2A done. Longest file name is: {list_files[string_lenght.index(max(string_lenght))]}"
-        )
-        return list_files[string_lenght.index(max(string_lenght))]
-    except Exception as e:
-        logging.error(f"Step 2A Error: {e}")
+# TODO: update utils the way 2B and 5B list_of_tickers are created
+def update_MC_and_exchanges_from_YF():
+    list_of_tickers = [t.ticker for t in session.query(AllTickersMonthlyUpdate).all()]
+
+    nasdaq_ticker = 0
+    nyse_ticker = 0
+    for ticker in list_of_tickers:
+        try:
+            info = yf.Ticker(ticker).info
+            market_cap = info.get("marketCap")
+            exchange_name = (
+                info.get("fullExchangeName") or info.get("exchange") or "Unknown"
+            )
+            if exchange_name == "NasdaqGS" or exchange_name == "NMS":
+                nasdaq_ticker = 1
+                nyse_ticker = 0
+
+            if exchange_name == "NYSE" or exchange_name == "NYQ":
+                nasdaq_ticker = 0
+                nyse_ticker = 1
+
+            session.query(AllTickersMonthlyUpdate).filter(
+                AllTickersMonthlyUpdate.ticker == ticker
+            ).update(
+                {
+                    AllTickersMonthlyUpdate.market_cap: market_cap,
+                    AllTickersMonthlyUpdate.nasdaq_tickers: nasdaq_ticker,
+                    AllTickersMonthlyUpdate.nyse_tickers: nyse_ticker,
+                }
+            )
+        except Exception as e:
+            print(f"Error fetching {ticker}: {e}")
+            market_cap = None
+            exchange_name = None
+
+    session.commit()
+    session.close()
 
 
 # 2B. Create DF from a file with tickers with Market Cap > $2B
@@ -193,6 +219,7 @@ def update_lt2B_nasdaq_or_nyse(nasdaq_file, nyse_file):
         logging.error(f"Step 4 Error {e}")
 
 
+# TODO: check if needed?
 # 5. Delete tickers that are not Nasdaq or Nyse
 def delete_not_nasdaq_nor_nyse():
     try:
