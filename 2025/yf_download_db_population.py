@@ -60,6 +60,24 @@ def download_tickers_from_yf(tickers, last_date):
             index=False,
         )
 
+        # check if there is any data,
+        # so if there was a day of the whole process should break
+        # empty file should crush the process
+        df_check = pd.read_csv(
+            f"{os.getenv('CSV_FOLDER_PATH')}/{str(previous_day).replace('-', '')}.csv",
+            engine="python",
+        )
+        # Count total lines (including header)
+        total_lines = len(df_check) + 1
+
+        # if check just in cas if there a lot of missing data
+        # also not wanted situation
+        if total_lines < 50:
+            logging.warning(
+                f"VERY FEW LINES. Number of lines: {total_lines}", exc_info=True
+            )
+            break
+
         print("-------------------------------------")
         print("One minute sleep during downloading from YF")
         time.sleep(30)
