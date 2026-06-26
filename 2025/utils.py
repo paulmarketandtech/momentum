@@ -3,7 +3,7 @@ import os
 from datetime import date, timedelta
 
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Integer, String, create_engine
+from sqlalchemy import Boolean, Column, Date, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
@@ -34,7 +34,7 @@ class AllTickersMonthlyUpdate(Base):
     __tablename__ = "all_tickers_monthly_update"
 
     id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)  # date when updated
+    date = Column(Date, nullable=False)
     ticker = Column(String, nullable=False, index=True)
     market_cap = Column(Integer, nullable=False)
     nasdaq_tickers = Column(Boolean, nullable=False)

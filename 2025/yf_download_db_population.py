@@ -1,11 +1,16 @@
-import yfinance as yf
-import logging, time, os, runpy
-import pandas as pd
+import logging
+import os
+import runpy
+import time
 from datetime import date
-from utils import previous_day, list_of_tickers_2B
+
+import pandas as pd
+import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, Column, Integer, Date, String, Float, Boolean
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
 
@@ -16,6 +21,7 @@ logging.basicConfig(
 )
 
 logging.info(f"Working on {previous_day}")
+print(f"Working on {previous_day}")
 
 Base = declarative_base()
 
