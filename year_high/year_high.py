@@ -149,11 +149,10 @@ def check_new_high(df_high):
         fiftyTwoWeekRange = row["fiftyTwoWeekRange"]
         fullExchangeName = row["fullExchangeName"]
 
-        # Get existing record (or None)
         record = session.query(YearHigh).filter_by(ticker=ticker).first()
 
         if record is None:
-            # New ticker – insert with today's date
+            # New ticker – insert with current date
             session.add(
                 YearHigh(
                     ticker=ticker,
@@ -168,17 +167,16 @@ def check_new_high(df_high):
 
             print(f"Inserted {ticker} with high {new_high} on {today}")
         else:
-            # Compare high values
             current_high = record.fifty_two_week_high
             if current_high is None or new_high > current_high:
-                # New high achieved – update both value and date
                 record.fifty_two_week_high = new_high
                 record.date_52week_high = previous_day
                 record.market_cap = marketCap
 
-                print(f"Updated {ticker}: high {current_high} → {new_high} on {today}")
+                print(
+                    f"Updated {ticker}: high {current_high} → {new_high} on {previous_day}"
+                )
             else:
-                # No new high – keep everything as is
                 print(
                     f"{ticker}: not a new high (current {current_high} >= {new_high})"
                 )
@@ -196,15 +194,14 @@ def check_new_low(df_low):
         fullExchangeName = row["fullExchangeName"]
 
         # Get existing record (or None)
-        record = session.query(YearHigh).filter_by(ticker=ticker).first()
+        record = session.query(YearLow).filter_by(ticker=ticker).first()
 
         if record is None:
-            # New ticker – insert with today's date
             session.add(
-                YearHigh(
+                YearLow(
                     ticker=ticker,
-                    fifty_two_week_high=new_high,
-                    date_52week_high=previous_day,
+                    fifty_two_week_low=new_low,
+                    date_52week_low=previous_day,
                     market_cap=marketCap,
                     long_name=longName,
                     fifty_two_week_range=fiftyTwoWeekRange,
@@ -212,22 +209,19 @@ def check_new_low(df_low):
                 )
             )
 
-            print(f"Inserted {ticker} with high {new_high} on {today}")
+            print(f"Inserted {ticker} with high {new_low} on {previous_day}")
         else:
-            # Compare high values
-            current_high = record.fifty_two_week_high
-            if current_high is None or new_high > current_high:
-                # New high achieved – update both value and date
-                record.fifty_two_week_high = new_high
-                record.date_52week_high = previous_day
+            current_high = record.fifty_two_week_low
+            if current_low is None or new_low < current_low:
+                record.fifty_two_week_low = new_low
+                record.date_52week_low = previous_day
                 record.market_cap = marketCap
 
-                print(f"Updated {ticker}: high {current_high} → {new_high} on {today}")
-            else:
-                # No new high – keep everything as is
                 print(
-                    f"{ticker}: not a new high (current {current_high} >= {new_high})"
+                    f"Updated {ticker}: low {current_low} → {new_low} on {previous_day}"
                 )
+            else:
+                print(f"{ticker}: not a new low (current {current_low} >= {new_low})")
 
     session.commit()
 
@@ -244,8 +238,10 @@ df = fetch_stock_data(
 """
 # print(df.head())
 """
-df_high = df[["ticker", "fiftyTwoWeekHigh"]]
-df_low = df[["ticker", "fiftyTwoWeekLow"]]
+df_high = df[["ticker", "fiftyTwoWeekHigh", "marketCap"]]
+df_low = df[["ticker", "fiftyTwoWeekLow", "marketCap"]]
+check_new_high(df_high)
+check_new_low(df_low)
 print(df_high)
 print(20 * "-")
 print(df_low)
@@ -254,28 +250,15 @@ session.close()
 """
 TODO:
 add logs
+functions should be more less working 
+download DB, and run it 
 """
 
-"""
-Workflof:
-DONE get all tickers from CSV
-READY get from YF all 52 week highs/lows, exchange and put it to new csv
-DB
-- Add new table 52weekHighsLows
-- Populate new table with benchmark values from csv
-"""
 
-"""
-Code Workflof:
-After daily downloading data from YF and populiting DB 
-Reset all new_high values to 0/False/Null in table 52weekHighs
-Create a list with all tickers from DB
-loop through and chech 
-"""
 """
 NEW WORKFLOW 
 get all tickers from AllTickers.. table 
-download for all of them 52 week highs and lows and save it all to new table 52week_high_low with current date 
+download for all of them 52 week highs and lows and save it all to 2 tables 52week_high & low with current date 
 
 Take all tickers with MC > $1B and daily itterate through all of them and download current highs/lows 
 keep it in a DF 
