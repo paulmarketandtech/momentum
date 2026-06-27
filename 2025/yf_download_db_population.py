@@ -76,7 +76,7 @@ def download_tickers_from_yf(tickers, last_date):
             logging.warning(
                 f"VERY FEW LINES. Number of lines: {total_lines}", exc_info=True
             )
-            break
+            return
 
         print("-------------------------------------")
         print("One minute sleep during downloading from YF")
