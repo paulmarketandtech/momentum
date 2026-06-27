@@ -9,7 +9,6 @@ import yfinance as yf
 from dotenv import load_dotenv
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-
 from utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
@@ -19,10 +18,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-
-logging.info(f"Working on {previous_day}")
-print(f"Working on {previous_day}")
-
 Base = declarative_base()
 
 
