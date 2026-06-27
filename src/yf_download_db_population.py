@@ -9,7 +9,6 @@ import yfinance as yf
 from dotenv import load_dotenv
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-
 from utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
@@ -19,10 +18,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-
-logging.info(f"Working on {previous_day}")
-print(f"Working on {previous_day}")
-
 Base = declarative_base()
 
 
@@ -76,7 +71,7 @@ def download_tickers_from_yf(tickers, last_date):
             logging.warning(
                 f"VERY FEW LINES. Number of lines: {total_lines}", exc_info=True
             )
-            break
+            return
 
         print("-------------------------------------")
         print("One minute sleep during downloading from YF")
