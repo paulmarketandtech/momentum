@@ -1,9 +1,12 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
-from sqlalchemy.orm import sessionmaker, declarative_base
+import logging
+import os
+
 import pandas as pd
-import logging, os
 from dotenv import load_dotenv
-from utils import previous_day, PREVIOUS_CORRECTION_DATE, LAST_CORRECTION_DATE
+from sqlalchemy import Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from utils import LAST_CORRECTION_DATE, PREVIOUS_CORRECTION_DATE, previous_day
 
 load_dotenv()
 
@@ -13,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting Best/worst YTD, corrections DB populating")
+logging.info("Starting Best/worst YTD, corrections DB populating")
 
 Base = declarative_base()
 
@@ -219,10 +222,10 @@ for _, row in last_correction_worst20.iterrows():
 session.commit()
 session.close()
 
-logging.info(f"Finished Best/worst YTD, corrections DB populating")
+logging.info("Finished Best/worst YTD, corrections DB populating")
 
-import time
 import runpy
+import time
 
 print("YTD finished - 5 seconds sleepipng")
 time.sleep(5)

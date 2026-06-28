@@ -18,7 +18,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting Market Breadth counting and DB populating")
+logging.info("Starting Market Breadth counting and DB populating")
 
 Base = declarative_base()
 

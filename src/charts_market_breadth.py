@@ -1,13 +1,12 @@
-import os, time, runpy, logging
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    Float,
-    Date,
-)
-from sqlalchemy.orm import sessionmaker, declarative_base
+import logging
+import os
+import runpy
+import time
+
 from dotenv import load_dotenv
+from sqlalchemy import Column, Date, Float, Integer, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from utils import previous_day
 
 load_dotenv()
@@ -17,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-logging.info(f"Starting chart ploting")
+logging.info("Starting chart ploting")
 
 Base = declarative_base()
 
