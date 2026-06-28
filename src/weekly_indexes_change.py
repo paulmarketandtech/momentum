@@ -18,7 +18,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting indexes weekly change populating")
+logging.info("Starting indexes weekly change populating")
 
 Base = declarative_base()
 
@@ -122,7 +122,7 @@ def weekly_index_change(tickers, last_friday, four_weeks_ago_friday):
             logging.error(
                 f"Bad ticker: {ticker} in counting 4 weeks IndexesWeeklyChange change"
             )
-    logging.info(f"Finished 4 weeks IndexesWeeklyChange change populating")
+    logging.info("Finished 4 weeks IndexesWeeklyChange change populating")
 
 
 def weekly_commodity_change(tickers, last_friday, four_weeks_ago_friday):
@@ -162,7 +162,7 @@ def weekly_commodity_change(tickers, last_friday, four_weeks_ago_friday):
             logging.error(
                 f"Bad ticker: {ticker} in counting 4 weeks CommoditiesWeeklyChange change"
             )
-    logging.info(f"Finished 4 weeks CommoditiesWeeklyChange change populating")
+    logging.info("Finished 4 weeks CommoditiesWeeklyChange change populating")
 
 
 def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
@@ -202,7 +202,7 @@ def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
             logging.error(
                 f"Bad ticker: {ticker} in counting 4 weeks EtfsWeeklyChange change"
             )
-    logging.info(f"Finished 4 weeks EtfsWeeklyChange change populating")
+    logging.info("Finished 4 weeks EtfsWeeklyChange change populating")
 
 
 last_friday = date.today() - timedelta(days=1)
@@ -306,7 +306,7 @@ weekly_etfs_change(list_of_etfs, last_friday, four_weeks_ago_friday)
 
 session.close()
 
-logging.info(f"Finished indexes weekly DB populating")
+logging.info("Finished indexes weekly DB populating")
 
 import runpy
 import time

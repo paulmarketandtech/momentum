@@ -23,7 +23,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting weekly change populating")
+logging.info("Starting weekly change populating")
 
 Base = declarative_base()
 
@@ -199,7 +199,7 @@ session.commit()
 
 session.close()
 
-logging.info(f"Finished best/worst weekly DB populating")
+logging.info("Finished best/worst weekly DB populating")
 
 import runpy
 import time

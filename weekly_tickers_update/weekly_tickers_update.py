@@ -2,21 +2,9 @@ import logging
 import os
 import time
 
-import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    Float,
-    Integer,
-    MetaData,
-    String,
-    Table,
-    and_,
-    create_engine,
-)
+from sqlalchemy import Boolean, Column, Date, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()

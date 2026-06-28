@@ -1,9 +1,14 @@
-import logging, os, time, runpy
-from sqlalchemy import create_engine, Column, Integer, Float, Date, Boolean, String
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.sql import and_
+import logging
+import os
+import runpy
+import time
+
 from dotenv import load_dotenv
-from utils import previous_day
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.sql import and_
+
+from utils import list_of_tickers_lt_5B, previous_day
 
 load_dotenv()
 
@@ -13,7 +18,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting Market Breadth counting and DB populating")
+logging.info("Starting Market Breadth counting and DB populating")
 
 Base = declarative_base()
 
@@ -57,18 +62,6 @@ class MarketBreadth(Base):
         return f"<StockData(date='{self.date}')>"
 
 
-class TickersList5B(Base):
-    __tablename__ = "list_of_tickers_lt_5B"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    nasdaq_tickers = Column(Boolean, nullable=False)
-    nyse_tickers = Column(Boolean, nullable=False)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
-
-
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
 # Base.metadata.create_all(engine)
 
@@ -85,10 +78,13 @@ def get_change(above, number_of_tickers):
         return 0
 
 
-list_of_tickers = [t.ticker for t in session.query(TickersList5B).all()]
 query_ma = (
     session.query(StockData)
-    .filter(and_(StockData.ticker.in_(list_of_tickers), StockData.date == previous_day))
+    .filter(
+        and_(
+            StockData.ticker.in_(list_of_tickers_lt_5B), StockData.date == previous_day
+        )
+    )
     .all()
 )
 
