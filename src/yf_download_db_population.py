@@ -7,8 +7,9 @@ from datetime import date
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
+from sqlalchemy import Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+
 from utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
