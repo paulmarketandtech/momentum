@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add parent directory to sys.path
+parent_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(parent_dir))
 import logging
 import os
 from datetime import date, datetime, timedelta
@@ -9,7 +15,7 @@ import yfinance as yf
 from dotenv import load_dotenv
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from utils import previous_day
+from src.utils import previous_day
 
 load_dotenv()
 
@@ -19,10 +25,11 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 # pd.set_option("display.float_format", lambda x: f"{x:.0f}" if isinstance(x, (int, float)) else x)
-# dat = yf.Ticker("LTM")
 
 Base = declarative_base()
 ABOVE_GIVEN_MC = 1_000_000_000
+REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
+OPTIONAL_FIELDS = ["marketCap", "longName", "fiftyTwoWeekRange", "fullExchangeName"]
 
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
 
@@ -31,13 +38,13 @@ class YearHigh(Base):
     __tablename__ = "52week_highs"
 
     id = Column(Integer, primary_key=True)
-    date_52week_high = Column(Date, nullable=True)
     ticker = Column(String, nullable=False, index=True)
-    long_name = Column(String, nullable=True)
-    market_cap = Column(Float, nullable=False)
     fifty_two_week_high = Column(Float, nullable=False)
-    full_exchange_name = Column(String, nullable=False)
-    fifty_two_week_range = Column(String, nullable=False)
+    date_52week_high = Column(Date, nullable=False)
+    long_name = Column(String)
+    market_cap = Column(Float)
+    full_exchange_name = Column(String)
+    fifty_two_week_range = Column(String)
 
     def __repr__(self):
         return f"<StockPrice(ticker='{self.ticker}')>"
@@ -47,13 +54,13 @@ class YearLow(Base):
     __tablename__ = "52week_lows"
 
     id = Column(Integer, primary_key=True)
-    date_52week_low = Column(Date, nullable=True)
     ticker = Column(String, nullable=False, index=True)
-    long_name = Column(String, nullable=True)
-    market_cap = Column(Float, nullable=False)
     fifty_two_week_low = Column(Float, nullable=False)
-    full_exchange_name = Column(String, nullable=False)
-    fifty_two_week_range = Column(String, nullable=False)
+    date_52week_low = Column(Date, nullable=False)
+    long_name = Column(String)
+    market_cap = Column(Float)
+    full_exchange_name = Column(String)
+    fifty_two_week_range = Column(String)
 
     def __repr__(self):
         return f"<StockPrice(ticker='{self.ticker}')>"
@@ -78,20 +85,21 @@ class AllTickersMonthlyUpdate(Base):
 Session = sessionmaker(bind=engine)
 session = Session()
 
-REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
-OPTIONAL_FIELDS = ["marketCap", "longName", "fiftyTwoWeekRange", "fullExchangeName"]
 
+def creating_list_of_all_tickers(above_given_MC):
+    list_of_tickers = [
+        t.ticker
+        for t in session.query(AllTickersMonthlyUpdate)
+        .filter(AllTickersMonthlyUpdate.market_cap > above_given_MC)
+        .all()
+    ]
 
-# readd filter after initial run
-# .filter(AllTickersMonthlyUpdate.market_cap > ABOVE_GIVEN_MC)
-def creating_list_of_all_tickers():
-    list_of_tickers = [t.ticker for t in session.query(AllTickersMonthlyUpdate).all()]
     logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     return list_of_tickers
 
 
-def fetch_stock_data(symbol_list: list[str], output_path: str) -> pd.DataFrame:
+def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
     rows = []
     all_fields = REQUIRED_FIELDS + OPTIONAL_FIELDS
 
@@ -99,7 +107,7 @@ def fetch_stock_data(symbol_list: list[str], output_path: str) -> pd.DataFrame:
     for i, ticker in enumerate(symbol_list):
         if (i + 1) % 500 == 0:
             logging.info(f"Processing {i + 1}/{len(symbol_list)}")
-            print(f"Processing {i + 1}/{len(symbol_list)}")
+            logging.info(datetime.now() - start)
 
         try:
             info = yf.Ticker(ticker).info
@@ -121,22 +129,17 @@ def fetch_stock_data(symbol_list: list[str], output_path: str) -> pd.DataFrame:
                 row[field] = info.get(field)
 
             rows.append(row)
-            print(ticker)
 
         except Exception as e:
             logging.error(
                 f"Error {ticker} while downloading from YF: {e}", exc_info=True
             )
-            print(f"Error {ticker} while downloading from YF: {e}")
             continue
 
     df = pd.DataFrame(rows)
 
-    df.to_csv(output_path, index=False)
-    logging.info(f"Saved {len(df)} tickers to {output_path}")
-
     end = datetime.now()
-    print(f"total time: {end-start}")
+    logging.info(f"total time: {end-start}")
     return df
 
 
@@ -164,8 +167,9 @@ def check_new_high(df_high):
                     full_exchange_name=fullExchangeName,
                 )
             )
-
-            print(f"Inserted {ticker} with high {new_high} on {today}")
+            logging.info(
+                f"NEW TICKER. Inserted {ticker} with high {new_high} on {previous_day}"
+            )
         else:
             current_high = record.fifty_two_week_high
             if current_high is None or new_high > current_high:
@@ -173,14 +177,9 @@ def check_new_high(df_high):
                 record.date_52week_high = previous_day
                 record.market_cap = marketCap
 
-                print(
-                    f"Updated {ticker}: high {current_high} → {new_high} on {previous_day}"
+                logging.info(
+                    f"NEW HIGH. Updated {ticker}: high {current_high} → {new_high} on {previous_day}"
                 )
-            else:
-                print(
-                    f"{ticker}: not a new high (current {current_high} >= {new_high})"
-                )
-
     session.commit()
 
 
@@ -208,65 +207,52 @@ def check_new_low(df_low):
                     full_exchange_name=fullExchangeName,
                 )
             )
-
-            print(f"Inserted {ticker} with high {new_low} on {previous_day}")
+            logging.info(
+                f"NEW TICKER. Inserted {ticker} with low {new_low} on {previous_day}"
+            )
         else:
-            current_high = record.fifty_two_week_low
+            current_low = record.fifty_two_week_low
             if current_low is None or new_low < current_low:
                 record.fifty_two_week_low = new_low
                 record.date_52week_low = previous_day
                 record.market_cap = marketCap
 
-                print(
-                    f"Updated {ticker}: low {current_low} → {new_low} on {previous_day}"
+                logging.info(
+                    f"NEW LOW. Updated {ticker}: low {current_low} → {new_low} on {previous_day}"
                 )
-            else:
-                print(f"{ticker}: not a new low (current {current_low} >= {new_low})")
-
     session.commit()
 
 
-# symbol_list = ["AAPL", "NVDA", "AMKR", "AMZN"]
-symbol_list = creating_list_of_all_tickers()
-print(len(symbol_list))
+def main():
+    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
 
-"""
-GOOD
-df = fetch_stock_data(
-    symbol_list=symbol_list[10:18], output_path="all_tickers_high_low.csv"
-)
-"""
-# print(df.head())
-"""
-df_high = df[["ticker", "fiftyTwoWeekHigh", "marketCap"]]
-df_low = df[["ticker", "fiftyTwoWeekLow", "marketCap"]]
-check_new_high(df_high)
-check_new_low(df_low)
-print(df_high)
-print(20 * "-")
-print(df_low)
-"""
-session.close()
-"""
-TODO:
-add logs
-functions should be more less working 
-download DB, and run it 
-"""
+    df = fetch_stock_data(symbol_list=symbol_list)
+
+    df_high = df[
+        [
+            "ticker",
+            "fiftyTwoWeekHigh",
+            "marketCap",
+            "longName",
+            "fiftyTwoWeekRange",
+            "fullExchangeName",
+        ]
+    ]
+    df_low = df[
+        [
+            "ticker",
+            "fiftyTwoWeekLow",
+            "marketCap",
+            "longName",
+            "fiftyTwoWeekRange",
+            "fullExchangeName",
+        ]
+    ]
+    check_new_high(df_high)
+    check_new_low(df_low)
+
+    session.close()
 
 
-"""
-NEW WORKFLOW 
-get all tickers from AllTickers.. table 
-download for all of them 52 week highs and lows and save it all to 2 tables 52week_high & low with current date 
-
-Take all tickers with MC > $1B and daily itterate through all of them and download current highs/lows 
-keep it in a DF 
-compare each one of them with value in DB.
-if a new higher high or lower low then update values and change the date to current 
-else do nothing.
-
-Filter DB for current date. if anything matches then there're new highs/low 
-HOW TO KNOW IF IT'S A NEW HIGH OR LOW IN THIS CASE?!?!?!
-two tables? 
-"""
+if __name__ == "__main__":
+    main()
