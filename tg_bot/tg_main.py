@@ -17,7 +17,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logging.info(f"Starting telegram bot")
+logging.info("Starting telegram bot")
 
 print("TG bot started")
 
@@ -27,14 +27,14 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
-class TickersList5B(Base):
-    __tablename__ = "list_of_tickers_lt_5B"
+class AllTickersMonthlyUpdate(Base):
+    __tablename__ = "all_tickers_monthly_update"
 
     id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
+    market_cap = Column(Integer, nullable=False)
 
     def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
 
 
 class YTD20Best(Base):
@@ -169,7 +169,11 @@ async def user_info_momentum(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def tuesday_number_of_tickers(context: ContextTypes.DEFAULT_TYPE):
     try:
-        query_result_5B = session.query(TickersList5B).all()
+        query_result_5B = (
+            session.query(AllTickersMonthlyUpdate)
+            .filter(AllTickersMonthlyUpdate.market_cap > 5_000_000_000)
+            .all()
+        )
         msg = f"Number of tickers this week: {len(query_result_5B)}"
         await context.bot.send_message(
             chat_id=os.getenv("CJT_GROUP_ID"),
@@ -436,4 +440,4 @@ logging.info("job queue ended")
 
 application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-logging.info(f"Finished TG bot")
+logging.info("Finished TG bot")
