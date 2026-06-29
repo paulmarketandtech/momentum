@@ -27,38 +27,27 @@ logging.basicConfig(
 # pd.set_option("display.float_format", lambda x: f"{x:.0f}" if isinstance(x, (int, float)) else x)
 
 Base = declarative_base()
-ABOVE_GIVEN_MC = 1_000_000_000
-REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
-OPTIONAL_FIELDS = ["marketCap", "longName", "fiftyTwoWeekRange", "fullExchangeName"]
 
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
 
 
-class YearHigh(Base):
-    __tablename__ = "52week_highs"
+class ExtraStockMetricsAndStats(Base):
+    __tablename__ = "extra_stock_metrics"
 
     id = Column(Integer, primary_key=True)
     ticker = Column(String, nullable=False, index=True)
-    fifty_two_week_high = Column(Float, nullable=False)
+    long_name = Column(String)
+    fifty_two_week_high_value = Column(Float, nullable=False)
+    fifty_two_week_high_check = Column(Boolean, nullable=False, default=False)
     date_52week_high = Column(Date, nullable=False)
-    long_name = Column(String)
-    market_cap = Column(Float)
-    full_exchange_name = Column(String)
-    fifty_two_week_range = Column(String)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
-
-
-class YearLow(Base):
-    __tablename__ = "52week_lows"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    fifty_two_week_low = Column(Float, nullable=False)
+    fifty_two_week_low_value = Column(Float, nullable=False)
+    fifty_two_week_low_check = Column(Boolean, nullable=False, default=False)
     date_52week_low = Column(Date, nullable=False)
-    long_name = Column(String)
     market_cap = Column(Float)
+    beta_value = Column(Float)
+    short_percent_of_float = Column(Float)
+    short_ratio = Column(Float)
+    date_short_interest = Column(Integer)
     full_exchange_name = Column(String)
     fifty_two_week_range = Column(String)
 
@@ -84,6 +73,19 @@ class AllTickersMonthlyUpdate(Base):
 
 Session = sessionmaker(bind=engine)
 session = Session()
+
+ABOVE_GIVEN_MC = 1_000_000_000
+REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
+OPTIONAL_FIELDS = [
+    "marketCap",
+    "longName",
+    "fiftyTwoWeekRange",
+    "fullExchangeName",
+    "shortPercentOfFloat",
+    "shortRatio",
+    "beta",
+    "dateShortInterest",
+]
 
 
 def creating_list_of_all_tickers(above_given_MC):
@@ -143,79 +145,78 @@ def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
     return df
 
 
-def check_new_high(df_high):
-    for _, row in df_high.iterrows():
+def update_stock_metrics(df):
+    for _, row in df.iterrows():
         ticker = row["ticker"]
-        new_high = row["fiftyTwoWeekHigh"]
-        marketCap = row["marketCap"]
         longName = row["longName"]
+        newHighValue = row["fiftyTwoWeekHigh"]
+        newLowValue = row["fiftyTwoWeekHigh"]
+        marketCap = row["marketCap"]
         fiftyTwoWeekRange = row["fiftyTwoWeekRange"]
         fullExchangeName = row["fullExchangeName"]
+        beta = row["beta"]
+        shortRatio = row["shortRatio"]
+        shortPercentOfFloat = row["shortPercentOfFloat"]
+        dateShortInterest = row["dateShortInterest"]
+
+        formatted_shortPercentOfFloat = f"{shortPercentOfFloat * 100:.2f}%"
+        formatted_dateShortInterest = datetime.fromtimestamp(
+            dateShortInterest
+        ).strftime("%Y-%m-%d")
 
         record = session.query(YearHigh).filter_by(ticker=ticker).first()
 
         if record is None:
             # New ticker – insert with current date
             session.add(
-                YearHigh(
+                ExtraStockMetricsAndStats(
                     ticker=ticker,
-                    fifty_two_week_high=new_high,
-                    date_52week_high=previous_day,
-                    market_cap=marketCap,
                     long_name=longName,
+                    fifty_two_week_high_value=newHighValue,
+                    fifty_two_week_high_check=0,
+                    date_52week_high=previous_day,
+                    fifty_two_week_low_value=newLowValue,
+                    fifty_two_week_low_check=0,
+                    date_52week_low=previous_day,
+                    market_cap=marketCap,
                     fifty_two_week_range=fiftyTwoWeekRange,
                     full_exchange_name=fullExchangeName,
+                    beta_value=beta,
+                    short_ratio=shortRatio,
+                    short_percent_of_float=formatted_shortPercentOfFloat,
+                    date_short_interest=formatted_dateShortInterest,
                 )
             )
-            logging.info(
-                f"NEW TICKER. Inserted {ticker} with high {new_high} on {previous_day}"
-            )
+            logging.info(f"NEW TICKER. Inserted {ticker}")
+
         else:
+            record.long_name = row["longName"]
+            record.market_cap = marketCap
+            record.fifty_two_week_range = row["fiftyTwoWeekRange"]
+            record.full_exchange_name = row["fullExchangeName"]
+            record.beta_value = row["beta"]
+            record.short_ratio = row["shortRatio"]
+            record.short_percent_of_float = row["shortPercentOfFloat"]
+            record.date_short_interest = row["dateShortInterest"]
+
+            # Those check signing to zero is important!
+            record.fifty_two_week_high_check = 0
+            record.fifty_two_week_low_check = 0
+
             current_high = record.fifty_two_week_high
             if current_high is None or new_high > current_high:
-                record.fifty_two_week_high = new_high
+                record.fifty_two_week_high = newHighValue
                 record.date_52week_high = previous_day
-                record.market_cap = marketCap
+                record.fifty_two_week_high_check = 1
 
                 logging.info(
                     f"NEW HIGH. Updated {ticker}: high {current_high} → {new_high} on {previous_day}"
                 )
-    session.commit()
-
-
-def check_new_low(df_low):
-    for _, row in df_low.iterrows():
-        ticker = row["ticker"]
-        new_low = row["fiftyTwoWeekLow"]
-        marketCap = row["marketCap"]
-        longName = row["longName"]
-        fiftyTwoWeekRange = row["fiftyTwoWeekRange"]
-        fullExchangeName = row["fullExchangeName"]
-
-        # Get existing record (or None)
-        record = session.query(YearLow).filter_by(ticker=ticker).first()
-
-        if record is None:
-            session.add(
-                YearLow(
-                    ticker=ticker,
-                    fifty_two_week_low=new_low,
-                    date_52week_low=previous_day,
-                    market_cap=marketCap,
-                    long_name=longName,
-                    fifty_two_week_range=fiftyTwoWeekRange,
-                    full_exchange_name=fullExchangeName,
-                )
-            )
-            logging.info(
-                f"NEW TICKER. Inserted {ticker} with low {new_low} on {previous_day}"
-            )
-        else:
             current_low = record.fifty_two_week_low
             if current_low is None or new_low < current_low:
-                record.fifty_two_week_low = new_low
+                record.fifty_two_week_low = newLowValue
                 record.date_52week_low = previous_day
-                record.market_cap = marketCap
+                record.fifty_two_week_low_check = 1
 
                 logging.info(
                     f"NEW LOW. Updated {ticker}: low {current_low} → {new_low} on {previous_day}"
@@ -227,29 +228,7 @@ def main():
     symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
 
     df = fetch_stock_data(symbol_list=symbol_list)
-
-    df_high = df[
-        [
-            "ticker",
-            "fiftyTwoWeekHigh",
-            "marketCap",
-            "longName",
-            "fiftyTwoWeekRange",
-            "fullExchangeName",
-        ]
-    ]
-    df_low = df[
-        [
-            "ticker",
-            "fiftyTwoWeekLow",
-            "marketCap",
-            "longName",
-            "fiftyTwoWeekRange",
-            "fullExchangeName",
-        ]
-    ]
-    check_new_high(df_high)
-    check_new_low(df_low)
+    update_stock_metrics(df)
 
     session.close()
 

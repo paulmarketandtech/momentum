@@ -271,7 +271,7 @@ async def last_correction_bottom20(context: ContextTypes.DEFAULT_TYPE):
             .all()
         )
         last_correction_worst_msg = (
-            f"Wrost performing stocks since April 7th as of {previous_day}\n\n"
+            f"Worst performing stocks since April 7th as of {previous_day}\n\n"
         )
         for q in query_result:
             last_correction_worst_msg += f"{q.ticker}: {round(q.pct_change,2)}%\n"
