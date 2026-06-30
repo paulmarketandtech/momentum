@@ -8,7 +8,7 @@ from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_eng
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import and_
 
-from utils import list_of_tickers_lt_5B, previous_day
+from utils import list_of_tickers_5B, previous_day
 
 load_dotenv()
 

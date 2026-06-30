@@ -30,18 +30,6 @@ Base = declarative_base()
 print("Starting best/worst weekly DB populating")
 
 
-class TickersList5B(Base):
-    __tablename__ = "list_of_tickers_lt_5B"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    nasdaq_tickers = Column(Boolean, nullable=False)
-    nyse_tickers = Column(Boolean, nullable=False)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
-
-
 class SourceData(Base):
     __tablename__ = "stock_data"
 
