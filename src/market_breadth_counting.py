@@ -81,9 +81,7 @@ def get_change(above, number_of_tickers):
 query_ma = (
     session.query(StockData)
     .filter(
-        and_(
-            StockData.ticker.in_(list_of_tickers_lt_5B), StockData.date == previous_day
-        )
+        and_(StockData.ticker.in_(list_of_tickers_5B), StockData.date == previous_day)
     )
     .all()
 )
