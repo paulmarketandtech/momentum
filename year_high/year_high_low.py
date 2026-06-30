@@ -74,7 +74,7 @@ class AllTickersMonthlyUpdate(Base):
 Session = sessionmaker(bind=engine)
 session = Session()
 
-ABOVE_GIVEN_MC = 1_000_000_000
+ABOVE_GIVEN_MC = 100_000_000
 REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
 OPTIONAL_FIELDS = [
     "marketCap",
@@ -142,6 +142,7 @@ def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
 
     end = datetime.now()
     logging.info(f"total time: {end-start}")
+    df.to_csv("jap_jeb.csv")
     return df
 
 
@@ -159,12 +160,14 @@ def update_stock_metrics(df):
         shortPercentOfFloat = row["shortPercentOfFloat"]
         dateShortInterest = row["dateShortInterest"]
 
-        formatted_shortPercentOfFloat = f"{shortPercentOfFloat * 100:.2f}%"
+        formatted_shortPercentOfFloat = round(shortPercentOfFloat * 100, 2)
         formatted_dateShortInterest = datetime.fromtimestamp(
             dateShortInterest
         ).strftime("%Y-%m-%d")
 
-        record = session.query(YearHigh).filter_by(ticker=ticker).first()
+        record = (
+            session.query(ExtraStockMetricsAndStats).filter_by(ticker=ticker).first()
+        )
 
         if record is None:
             # New ticker – insert with current date
@@ -225,10 +228,21 @@ def update_stock_metrics(df):
 
 
 def main():
-    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
+    """
+    STEPS TO DO:
+    download new DB.
+    create table
+    prepare symbol list
+    first time save also as csv (delete the old one)
+    then remove that code
+    ABOVE_GIVEN_MC turn back to $1B
+    copy back DB
 
-    df = fetch_stock_data(symbol_list=symbol_list)
-    update_stock_metrics(df)
+    """
+    # symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
+    symbol_list = ["AAPL", "NVDA", "MSFT", "TSM", "AMKR"]
+    # df = fetch_stock_data(symbol_list=symbol_list)
+    # update_stock_metrics(df)
 
     session.close()
 
