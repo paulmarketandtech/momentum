@@ -110,6 +110,8 @@ def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
         if (i + 1) % 500 == 0:
             logging.info(f"Processing {i + 1}/{len(symbol_list)}")
             logging.info(datetime.now() - start)
+            print(f"Processing {i + 1}/{len(symbol_list)}")
+            print(datetime.now() - start)
 
         try:
             info = yf.Ticker(ticker).info
@@ -142,107 +144,116 @@ def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
 
     end = datetime.now()
     logging.info(f"total time: {end-start}")
-    df.to_csv("jap_jeb.csv")
+    df.to_csv("all_tickers_df.csv")
     return df
 
 
-def update_stock_metrics(df):
-    for _, row in df.iterrows():
-        ticker = row["ticker"]
-        longName = row["longName"]
-        newHighValue = row["fiftyTwoWeekHigh"]
-        newLowValue = row["fiftyTwoWeekHigh"]
-        marketCap = row["marketCap"]
-        fiftyTwoWeekRange = row["fiftyTwoWeekRange"]
-        fullExchangeName = row["fullExchangeName"]
-        beta = row["beta"]
-        shortRatio = row["shortRatio"]
-        shortPercentOfFloat = row["shortPercentOfFloat"]
-        dateShortInterest = row["dateShortInterest"]
+def update_stock_metrics():
+    try:
+        for _, row in df.iterrows():
+            ticker = row["ticker"]
+            longName = row["longName"]
+            newHighValue = row["fiftyTwoWeekHigh"]
+            newLowValue = row["fiftyTwoWeekLow"]
+            marketCap = row["marketCap"]
+            fiftyTwoWeekRange = row["fiftyTwoWeekRange"]
+            fullExchangeName = row["fullExchangeName"]
+            beta = row["beta"]
+            shortRatio = row["shortRatio"]
+            shortPercentOfFloat = row["shortPercentOfFloat"]
+            dateShortInterest = row["dateShortInterest"]
 
-        formatted_shortPercentOfFloat = round(shortPercentOfFloat * 100, 2)
-        formatted_dateShortInterest = datetime.fromtimestamp(
-            dateShortInterest
-        ).strftime("%Y-%m-%d")
-
-        record = (
-            session.query(ExtraStockMetricsAndStats).filter_by(ticker=ticker).first()
-        )
-
-        if record is None:
-            # New ticker – insert with current date
-            session.add(
-                ExtraStockMetricsAndStats(
-                    ticker=ticker,
-                    long_name=longName,
-                    fifty_two_week_high_value=newHighValue,
-                    fifty_two_week_high_check=0,
-                    date_52week_high=previous_day,
-                    fifty_two_week_low_value=newLowValue,
-                    fifty_two_week_low_check=0,
-                    date_52week_low=previous_day,
-                    market_cap=marketCap,
-                    fifty_two_week_range=fiftyTwoWeekRange,
-                    full_exchange_name=fullExchangeName,
-                    beta_value=beta,
-                    short_ratio=shortRatio,
-                    short_percent_of_float=formatted_shortPercentOfFloat,
-                    date_short_interest=formatted_dateShortInterest,
-                )
+            record = (
+                session.query(ExtraStockMetricsAndStats)
+                .filter_by(ticker=ticker)
+                .first()
             )
-            logging.info(f"NEW TICKER. Inserted {ticker}")
 
-        else:
-            record.long_name = row["longName"]
-            record.market_cap = marketCap
-            record.fifty_two_week_range = row["fiftyTwoWeekRange"]
-            record.full_exchange_name = row["fullExchangeName"]
-            record.beta_value = row["beta"]
-            record.short_ratio = row["shortRatio"]
-            record.short_percent_of_float = row["shortPercentOfFloat"]
-            record.date_short_interest = row["dateShortInterest"]
-
-            # Those check signing to zero is important!
-            record.fifty_two_week_high_check = 0
-            record.fifty_two_week_low_check = 0
-
-            current_high = record.fifty_two_week_high
-            if current_high is None or new_high > current_high:
-                record.fifty_two_week_high = newHighValue
-                record.date_52week_high = previous_day
-                record.fifty_two_week_high_check = 1
-
-                logging.info(
-                    f"NEW HIGH. Updated {ticker}: high {current_high} → {new_high} on {previous_day}"
+            if record is None:
+                # New ticker – insert with current date
+                session.add(
+                    ExtraStockMetricsAndStats(
+                        ticker=ticker,
+                        long_name=longName,
+                        fifty_two_week_high_value=newHighValue,
+                        fifty_two_week_high_check=0,
+                        date_52week_high=previous_day,
+                        fifty_two_week_low_value=newLowValue,
+                        fifty_two_week_low_check=0,
+                        date_52week_low=previous_day,
+                        market_cap=marketCap,
+                        fifty_two_week_range=fiftyTwoWeekRange,
+                        full_exchange_name=fullExchangeName,
+                        beta_value=beta,
+                        short_ratio=shortRatio,
+                        short_percent_of_float=shortPercentOfFloat,
+                        date_short_interest=dateShortInterest,
+                    )
                 )
-            current_low = record.fifty_two_week_low
-            if current_low is None or new_low < current_low:
-                record.fifty_two_week_low = newLowValue
-                record.date_52week_low = previous_day
-                record.fifty_two_week_low_check = 1
+                logging.info(f"NEW TICKER. Inserted {ticker}")
 
-                logging.info(
-                    f"NEW LOW. Updated {ticker}: low {current_low} → {new_low} on {previous_day}"
-                )
+            else:
+                record.long_name = row["longName"]
+                record.market_cap = marketCap
+                record.fifty_two_week_range = row["fiftyTwoWeekRange"]
+                record.full_exchange_name = row["fullExchangeName"]
+                record.beta_value = row["beta"]
+                record.short_ratio = row["shortRatio"]
+                record.short_percent_of_float = row["shortPercentOfFloat"]
+                record.date_short_interest = row["dateShortInterest"]
+
+                # Those check signing to zero is important!
+                record.fifty_two_week_high_check = 0
+                record.fifty_two_week_low_check = 0
+
+                current_high = record.fifty_two_week_high_value
+                if current_high is None or newHighValue > current_high:
+                    record.fifty_two_week_high_value = newHighValue
+                    record.date_52week_high = previous_day
+                    record.fifty_two_week_high_check = 1
+
+                    logging.info(
+                        f"NEW HIGH. Updated {ticker}: high {current_high} → {newHighValue} on {previous_day}"
+                    )
+                current_low = record.fifty_two_week_low_value
+                if current_low is None or newLowValue < current_low:
+                    record.fifty_two_week_low_value = newLowValue
+                    record.date_52week_low = previous_day
+                    record.fifty_two_week_low_check = 1
+
+                    logging.info(
+                        f"NEW LOW. Updated {ticker}: low {current_low} → {newLowValue} on {previous_day}"
+                    )
+
+    except Exception as e:
+        logging.error(f"Database population failed: {e}", exc_info=True)
     session.commit()
+
+
+"""
+use those in a output, here (in DB) store raw values
+formatted_shortPercentOfFloat = round(shortPercentOfFloat * 100, 2)
+formatted_dateShortInterest = datetime.fromtimestamp(
+    dateShortInterest
+).strftime("%Y-%m-%d")
+"""
 
 
 def main():
     """
     STEPS TO DO:
-    download new DB.
-    create table
-    prepare symbol list
-    first time save also as csv (delete the old one)
+    V download new DB.
+    V create table
+    V prepare symbol list
+    V first time save also as csv (delete the old one)
     then remove that code
     ABOVE_GIVEN_MC turn back to $1B
     copy back DB
-
+    change naming convention
     """
-    # symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
-    symbol_list = ["AAPL", "NVDA", "MSFT", "TSM", "AMKR"]
-    # df = fetch_stock_data(symbol_list=symbol_list)
-    # update_stock_metrics(df)
+    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
+    df = fetch_stock_data(symbol_list=symbol_list)
+    update_stock_metrics(df)
 
     session.close()
 
