@@ -3,13 +3,15 @@ import os
 import runpy
 import time
 from datetime import date
+from typing import Dict
 
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import Column, Date, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
+from database import get_session
+from models.models import StockData
 from utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
@@ -19,27 +21,10 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-Base = declarative_base()
-
-
-class StockData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    open = Column(Float, nullable=False)
-    volume = Column(Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
 
 
 # downloads from YF and write DFs to files
-def download_tickers_from_yf(tickers, last_date):
+def download_tickers_from_yf(tickers: list[str], last_date: str) -> None:
     try:
         fifth_length_of_tickers = len(tickers) // 5
         df = yf.download(
@@ -131,7 +116,7 @@ def download_tickers_from_yf(tickers, last_date):
         logging.error(f"YF API connection failed: {e}", exc_info=True)
 
 
-def read_df_from_csv_and_populate_db(last_date):
+def read_df_from_csv_and_populate_db(last_date: str, session: Session) -> None:
     try:
         df = pd.read_csv(
             f"{os.getenv('CSV_FOLDER_PATH')}/{str(last_date).replace('-', '')}.csv",
@@ -161,11 +146,12 @@ def read_df_from_csv_and_populate_db(last_date):
 
 def main():
     try:
+        session = get_session()
         print(f"Working on date: {previous_day}")
         logging.info(f"Working on date: {previous_day}")
 
         download_tickers_from_yf(list_of_tickers_2B, previous_day)
-        read_df_from_csv_and_populate_db(previous_day)
+        read_df_from_csv_and_populate_db(previous_day, session)
         session.close()
 
         logging.info("5 seconds sleep before daily update")
@@ -182,10 +168,4 @@ def main():
 
 
 if __name__ == "__main__":
-    engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-    # engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
-    # Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
     main()

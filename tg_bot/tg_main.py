@@ -4,10 +4,23 @@ import os
 from datetime import date, datetime, timedelta
 
 from dotenv import load_dotenv
-from sqlalchemy import Column, Date, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+
+from database import get_session
+from models.models import (
+    AllTickersMonthlyUpdate,
+    CommoditiesWeeklyChange,
+    EtfsWeeklyChange,
+    IndexesWeeklyChange,
+    LastCorrectionBest,
+    LastCorrectionWorst,
+    Weekly20Worst,
+    YTD20Best,
+    YTD20Worst,
+)
+from src.utils import previous_day
 
 load_dotenv()
 
@@ -24,142 +37,7 @@ print("TG bot started")
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-Base = declarative_base()
-
-
-class AllTickersMonthlyUpdate(Base):
-    __tablename__ = "all_tickers_monthly_update"
-
-    id = Column(Integer, primary_key=True)
-    market_cap = Column(Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
-
-
-class YTD20Best(Base):
-    __tablename__ = "ytd_best"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.pct_change})>"
-
-
-class YTD20Worst(Base):
-    __tablename__ = "ytd_worst"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.ytd_worst})>"
-
-
-class LastCorrectionBest(Base):
-    __tablename__ = "last_correction_best"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class LastCorrectionWorst(Base):
-    __tablename__ = "last_correction_worst"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class Weekly20Best(Base):
-    __tablename__ = "weekly_change_best"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
-
-
-class Weekly20Worst(Base):
-    __tablename__ = "weekly_change_worst"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
-
-
-class IndexesWeeklyChange(Base):
-    __tablename__ = "indexes_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class CommoditiesWeeklyChange(Base):
-    __tablename__ = "commodities_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class EtfsWeeklyChange(Base):
-    __tablename__ = "etfs_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-try:
-    engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
-    logging.info(f"TG Engine created")
-except Exception as e:
-    logging.error(f"Engine creation failed: {e}", exc_info=True)
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
-previous_day = date.today() - timedelta(days=1)
+session = get_session()
 
 
 async def user_info_momentum(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -441,3 +319,4 @@ logging.info("job queue ended")
 application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 logging.info("Finished TG bot")
+session.close()

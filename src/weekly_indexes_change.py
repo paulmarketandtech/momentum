@@ -33,7 +33,7 @@ session = get_session()
 
 
 def weekly_index_change(
-    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+    tickers: list[str], last_friday: str, four_weeks_ago_friday: str, session: Session
 ) -> None:
     for ticker in tickers:
         try:
@@ -75,7 +75,7 @@ def weekly_index_change(
 
 
 def weekly_commodity_change(
-    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+    tickers: list[str], last_friday: str, four_weeks_ago_friday: str, session: Session
 ) -> None:
     for ticker in tickers:
         try:
@@ -117,7 +117,7 @@ def weekly_commodity_change(
 
 
 def weekly_etfs_change(
-    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+    tickers: list[str], last_friday: str, four_weeks_ago_friday: str, session: Session
 ) -> None:
     for ticker in tickers:
         try:

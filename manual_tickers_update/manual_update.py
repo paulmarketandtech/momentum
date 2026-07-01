@@ -1,20 +1,17 @@
-import sys
-from pathlib import Path
-
-# Add parent directory to sys.path
-parent_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(parent_dir))
 import logging
 import os
 import runpy
 import time
 from datetime import date
+from typing import Dict
 
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import Column, Date, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session
+
+from database import get_session
+from models.models import AllTickersMonthlyUpdate, StockData
 from src.utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
@@ -25,37 +22,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-Base = declarative_base()
 
-
-class StockData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    open = Column(Float, nullable=False)
-    volume = Column(Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
-
-
-class AllTickersMonthlyUpdate(Base):
-    __tablename__ = "all_tickers_monthly_update"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    market_cap = Column(Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
-
-
-def download_tickers_from_yf(tickers, start_date, end_date):
+def download_tickers_from_yf(
+    tickers: list[str], start_date: str, end_date: str
+) -> None:
     try:
         fifth_length_of_tickers = len(tickers) // 5
         df = yf.download(
@@ -129,7 +99,9 @@ def download_tickers_from_yf(tickers, start_date, end_date):
         logging.error(f"YF API connection failed: {e}", exc_info=True)
 
 
-def read_df_from_csv_and_populate_db_with_missing_data(start_date):
+def read_df_from_csv_and_populate_db_with_missing_data(
+    start_date: str, session: Session
+) -> None:
     try:
         df = pd.read_csv(
             f"{os.getenv('CSV_FOLDER_PATH')}/{str(start_date).replace('-', '')}.csv",
@@ -171,7 +143,7 @@ def read_df_from_csv_and_populate_db_with_missing_data(start_date):
         logging.error(f"Database population failed: {e}", exc_info=True)
 
 
-def creating_list_of_tickers(above_given_MC):
+def creating_list_of_tickers(above_given_MC: int, session: Session):
     list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)
@@ -197,24 +169,19 @@ def main():
     start_date = date(2026, 1, 2)
     end_date = date(2026, 1, 3)
 
-    # list_of_tickers = creating_list_of_tickers(ABOVE_GIVEN_MC)
+    session = get_session()
+    list_of_tickers = creating_list_of_tickers(ABOVE_GIVEN_MC, session)
 
     try:
         print(f"Working on date: {start_date}")
         logging.info(f"Working on date: {start_date}")
 
         # download_tickers_from_yf(list_of_tickers, start_date, end_date)
-        # read_df_from_csv_and_populate_db_with_missing_data(start_date)
+        # read_df_from_csv_and_populate_db_with_missing_data(start_date, session)
 
     except Exception as e:
         logging.critical(f"Critical error in main process: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
-    engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-    # engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
-    # Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
     main()

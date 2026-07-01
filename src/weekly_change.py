@@ -33,11 +33,11 @@ session = get_session()
 
 
 def creating_list_of_tickers(
-    list_of_tickers: List[str],
-    list_of_indexes: List[str],
-    list_of_commodities: List[str],
-    list_of_etfs: List[str],
-) -> List[str]:
+    list_of_tickers: list[str],
+    list_of_indexes: list[str],
+    list_of_commodities: list[str],
+    list_of_etfs: list[str],
+) -> list[str]:
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
     list_of_tickers.extend(list_of_etfs)
@@ -47,7 +47,7 @@ def creating_list_of_tickers(
 
 
 def weekly_change(
-    tickers: List[str], previous_day: str, last_friday: str, session: Session
+    tickers: list[str], previous_day: str, last_friday: str, session: Session
 ) -> None:
     for ticker in tickers:
         try:
