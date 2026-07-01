@@ -1,13 +1,20 @@
 import logging
 import os
 from datetime import date, timedelta
+from typing import Dict
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import Column, Date, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import and_
 
+from database import get_session
+from models.models import (
+    CommoditiesWeeklyChange,
+    EtfsWeeklyChange,
+    IndexesWeeklyChange,
+    StockData,
+)
 from utils import list_of_commodities, list_of_etfs, list_of_indexes
 
 load_dotenv()
@@ -19,89 +26,31 @@ logging.basicConfig(
 )
 
 logging.info("Starting indexes weekly change populating")
-
-Base = declarative_base()
-
 print("Starting indexes weekly DB populating")
 
 
-class SourceData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    weekly_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}', date='{self.date}')>"
+session = get_session()
 
 
-class IndexesWeeklyChange(Base):
-    __tablename__ = "indexes_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class CommoditiesWeeklyChange(Base):
-    __tablename__ = "commodities_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class EtfsWeeklyChange(Base):
-    __tablename__ = "etfs_weekly_change"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    one_week_pct_change = Column(Float, nullable=False)
-    four_week_pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
-# engine = create_engine(os.getenv("DB_STOCK_DATA"))
-Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
-
-def weekly_index_change(tickers, last_friday, four_weeks_ago_friday):
+def weekly_index_change(
+    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+) -> None:
     for ticker in tickers:
         try:
             last_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == last_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == last_friday,
                 )
                 .first()
             )
 
             four_weeks_before_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == four_weeks_ago_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == four_weeks_ago_friday,
                 )
                 .first()
             )
@@ -125,23 +74,25 @@ def weekly_index_change(tickers, last_friday, four_weeks_ago_friday):
     logging.info("Finished 4 weeks IndexesWeeklyChange change populating")
 
 
-def weekly_commodity_change(tickers, last_friday, four_weeks_ago_friday):
+def weekly_commodity_change(
+    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+) -> None:
     for ticker in tickers:
         try:
             last_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == last_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == last_friday,
                 )
                 .first()
             )
 
             four_weeks_before_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == four_weeks_ago_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == four_weeks_ago_friday,
                 )
                 .first()
             )
@@ -165,23 +116,25 @@ def weekly_commodity_change(tickers, last_friday, four_weeks_ago_friday):
     logging.info("Finished 4 weeks CommoditiesWeeklyChange change populating")
 
 
-def weekly_etfs_change(tickers, last_friday, four_weeks_ago_friday):
+def weekly_etfs_change(
+    tickers: List[str], last_friday: str, four_weeks_ago_friday: str, session: Session
+) -> None:
     for ticker in tickers:
         try:
             last_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == last_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == last_friday,
                 )
                 .first()
             )
 
             four_weeks_before_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == four_weeks_ago_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == four_weeks_ago_friday,
                 )
                 .first()
             )
@@ -209,7 +162,7 @@ last_friday = date.today() - timedelta(days=1)
 
 previous_friday = date.today() - timedelta(days=8)
 how_many_records_previous_friday = (
-    session.query(SourceData.ticker).filter(SourceData.date == previous_friday).all()
+    session.query(StockData.ticker).filter(StockData.date == previous_friday).all()
 )
 if len(how_many_records_previous_friday) == 0:
     previous_friday = date.today() - timedelta(days=9)
@@ -217,8 +170,8 @@ if len(how_many_records_previous_friday) == 0:
 
 four_weeks_ago_friday = date.today() - timedelta(days=29)
 how_many_records_four_weeks_ago = (
-    session.query(SourceData.ticker)
-    .filter(SourceData.date == four_weeks_ago_friday)
+    session.query(StockData.ticker)
+    .filter(StockData.date == four_weeks_ago_friday)
     .all()
 )
 if len(how_many_records_four_weeks_ago) == 0:
@@ -227,8 +180,8 @@ if len(how_many_records_four_weeks_ago) == 0:
 
 # -----INDEXES----------
 query_indexes = session.query(
-    SourceData.date, SourceData.ticker, SourceData.weekly_change
-).filter(and_(SourceData.ticker.in_(list_of_indexes), SourceData.date == last_friday))
+    StockData.date, StockData.ticker, StockData.weekly_change
+).filter(and_(StockData.ticker.in_(list_of_indexes), StockData.date == last_friday))
 
 results_indexes = query_indexes.all()
 
@@ -249,10 +202,8 @@ for _, row in df_weekly_indexes_sorted.iterrows():
 
 # ------COMMODITIES----------
 query_commodities = session.query(
-    SourceData.date, SourceData.ticker, SourceData.weekly_change
-).filter(
-    and_(SourceData.ticker.in_(list_of_commodities), SourceData.date == last_friday)
-)
+    StockData.date, StockData.ticker, StockData.weekly_change
+).filter(and_(StockData.ticker.in_(list_of_commodities), StockData.date == last_friday))
 
 results_commodities = query_commodities.all()
 for r in results_commodities:
@@ -279,8 +230,8 @@ for _, row in df_weekly_commodities_sorted.iterrows():
 
 # -----ETFs----------
 query_etfs = session.query(
-    SourceData.date, SourceData.ticker, SourceData.weekly_change
-).filter(and_(SourceData.ticker.in_(list_of_etfs), SourceData.date == last_friday))
+    StockData.date, StockData.ticker, StockData.weekly_change
+).filter(and_(StockData.ticker.in_(list_of_etfs), StockData.date == last_friday))
 
 results_etfs = query_etfs.all()
 
@@ -300,9 +251,11 @@ for _, row in df_weekly_etfs_sorted.iterrows():
 
 session.commit()
 
-weekly_index_change(list_of_indexes, last_friday, four_weeks_ago_friday)
-weekly_commodity_change(list_of_commodities, last_friday, four_weeks_ago_friday)
-weekly_etfs_change(list_of_etfs, last_friday, four_weeks_ago_friday)
+weekly_index_change(list_of_indexes, last_friday, four_weeks_ago_friday, session)
+weekly_commodity_change(
+    list_of_commodities, last_friday, four_weeks_ago_friday, session
+)
+weekly_etfs_change(list_of_etfs, last_friday, four_weeks_ago_friday, session)
 
 session.close()
 

@@ -197,8 +197,8 @@ formatted_dateShortInterest = datetime.fromtimestamp(
 def main():
     session = get_session()
     symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC, session)
-    # df_tickers = fetch_stock_data(symbol_list=symbol_list)
-    # update_stock_metrics(df_tickers, session, previous_day)
+    df_tickers = fetch_stock_data(symbol_list=symbol_list)
+    update_stock_metrics(df_tickers, session, previous_day)
 
     session.close()
 

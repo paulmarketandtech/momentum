@@ -1,12 +1,14 @@
 import logging
 import os
 from datetime import date, datetime, timedelta
+from typing import Dict
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session
 
+from database import get_session
+from models.models import StockData, Weekly20Best, Weekly20Worst
 from utils import (
     list_of_commodities,
     list_of_etfs,
@@ -24,60 +26,18 @@ logging.basicConfig(
 )
 
 logging.info("Starting weekly change populating")
-
-Base = declarative_base()
-
 print("Starting best/worst weekly DB populating")
 
 
-class SourceData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    weekly_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class Weekly20Best(Base):
-    __tablename__ = "weekly_change_best"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
-
-
-class Weekly20Worst(Base):
-    __tablename__ = "weekly_change_worst"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
-
-
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-# engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
-# Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
+session = get_session()
 
 
 def creating_list_of_tickers(
-    list_of_tickers, list_of_indexes, list_of_commodities, list_of_etfs
-):
+    list_of_tickers: List[str],
+    list_of_indexes: List[str],
+    list_of_commodities: List[str],
+    list_of_etfs: List[str],
+) -> List[str]:
     list_of_tickers.extend(list_of_indexes)
     list_of_tickers.extend(list_of_commodities)
     list_of_tickers.extend(list_of_etfs)
@@ -86,22 +46,24 @@ def creating_list_of_tickers(
     return list_of_tickers
 
 
-def weekly_change(tickers, previous_day, last_friday):
+def weekly_change(
+    tickers: List[str], previous_day: str, last_friday: str, session: Session
+) -> None:
     for ticker in tickers:
         try:
             previous_day_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == previous_day,
+                    StockData.ticker == ticker,
+                    StockData.date == previous_day,
                 )
                 .first()
             )
             last_friday_data = (
-                session.query(SourceData)
+                session.query(StockData)
                 .filter(
-                    SourceData.ticker == ticker,
-                    SourceData.date == last_friday,
+                    StockData.ticker == ticker,
+                    StockData.date == last_friday,
                 )
                 .first()
             )
@@ -111,9 +73,9 @@ def weekly_change(tickers, previous_day, last_friday):
                 / last_friday_data.close
             ) * 100
 
-            session.query(SourceData).filter_by(
-                ticker=ticker, date=previous_day
-            ).update({"weekly_change": weekly_returns})
+            session.query(StockData).filter_by(ticker=ticker, date=previous_day).update(
+                {"weekly_change": weekly_returns}
+            )
 
             session.commit()
 
@@ -140,7 +102,7 @@ For now it will only go back to Thursday. In case if Friday and Thursday will be
 """
 
 how_many_records = (
-    session.query(SourceData.ticker).filter(SourceData.date == last_friday).all()
+    session.query(StockData.ticker).filter(StockData.date == last_friday).all()
 )
 if len(how_many_records) == 0:
     last_friday = date.today() - timedelta(days=days_shift[today.lower()] + 1)
@@ -149,11 +111,11 @@ if len(how_many_records) == 0:
 list_of_tickers = creating_list_of_tickers(
     list_of_tickers_5B, list_of_indexes, list_of_commodities, list_of_etfs
 )
-weekly_change(list_of_tickers, previous_day, last_friday)
+weekly_change(list_of_tickers, previous_day, last_friday, session)
 
 query_result = (
-    session.query(SourceData.date, SourceData.ticker, SourceData.weekly_change)
-    .filter(SourceData.date == previous_day)
+    session.query(StockData.date, StockData.ticker, StockData.weekly_change)
+    .filter(StockData.date == previous_day)
     .all()
 )
 

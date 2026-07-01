@@ -161,3 +161,66 @@ class MarketBreadth(Base):
 
     def __repr__(self):
         return f"<StockData(date='{self.date}')>"
+
+
+class Weekly20Best(Base):
+    __tablename__ = "weekly_change_best"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
+
+
+class Weekly20Worst(Base):
+    __tablename__ = "weekly_change_worst"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.weekly_change})>"
+
+
+class IndexesWeeklyChange(Base):
+    __tablename__ = "indexes_weekly_change"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    one_week_pct_change = Column(Float, nullable=False)
+    four_week_pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class CommoditiesWeeklyChange(Base):
+    __tablename__ = "commodities_weekly_change"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    one_week_pct_change = Column(Float, nullable=False)
+    four_week_pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class EtfsWeeklyChange(Base):
+    __tablename__ = "etfs_weekly_change"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    one_week_pct_change = Column(Float, nullable=False)
+    four_week_pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"

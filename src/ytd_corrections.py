@@ -3,7 +3,6 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy.orm import declarative_base, sessionmaker
 
 from database import get_session
 from models.models import (
@@ -28,11 +27,7 @@ logging.basicConfig(
 logging.info("Starting Best/worst YTD, corrections DB populating")
 
 
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
-# Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
+session = get_session()
 
 query_result = (
     session.query(
