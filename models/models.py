@@ -1,8 +1,8 @@
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String
 
-from momentum.database import Base
+from database import Base
 
-print("jap jeb")
+print("i'm in models.py")
 
 
 class StockData(Base):
@@ -25,3 +25,39 @@ class StockData(Base):
 
     def __repr__(self):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
+
+
+class ExtraStockMetricsAndStats(Base):
+    __tablename__ = "extra_stock_metrics"
+
+    id = Column(Integer, primary_key=True)
+    ticker = Column(String, nullable=False, index=True)
+    long_name = Column(String)
+    fifty_two_week_high_value = Column(Float, nullable=False)
+    date_52week_high = Column(Date, nullable=False)
+    fifty_two_week_low_value = Column(Float, nullable=False)
+    date_52week_low = Column(Date, nullable=False)
+    market_cap = Column(Float)
+    beta_value = Column(Float)
+    short_percent_of_float = Column(Float)
+    short_ratio = Column(Float)
+    date_short_interest = Column(Integer)
+    full_exchange_name = Column(String)
+    fifty_two_week_range = Column(String)
+
+    def __repr__(self):
+        return f"<StockPrice(ticker='{self.ticker}')>"
+
+
+class AllTickersMonthlyUpdate(Base):
+    __tablename__ = "all_tickers_monthly_update"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    market_cap = Column(Integer, nullable=False)
+    nasdaq_tickers = Column(Boolean, nullable=False)
+    nyse_tickers = Column(Boolean, nullable=False)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"

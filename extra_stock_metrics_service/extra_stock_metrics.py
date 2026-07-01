@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add parent directory to sys.path
-parent_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(parent_dir))
 import logging
 import os
 from datetime import date, datetime
@@ -13,8 +7,11 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Date, Float, Integer, String, create_engine
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
+from database import get_session
+from models.models import AllTickersMonthlyUpdate, ExtraStockMetricsAndStats
 from src.utils import previous_day
 
 load_dotenv()
@@ -25,46 +22,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 # pd.set_option("display.float_format", lambda x: f"{x:.0f}" if isinstance(x, (int, float)) else x)
-
-Base = declarative_base()
-
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-
-
-class ExtraStockMetricsAndStats(Base):
-    __tablename__ = "extra_stock_metrics"
-
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String, nullable=False, index=True)
-    long_name = Column(String)
-    fifty_two_week_high_value = Column(Float, nullable=False)
-    date_52week_high = Column(Date, nullable=False)
-    fifty_two_week_low_value = Column(Float, nullable=False)
-    date_52week_low = Column(Date, nullable=False)
-    market_cap = Column(Float)
-    beta_value = Column(Float)
-    short_percent_of_float = Column(Float)
-    short_ratio = Column(Float)
-    date_short_interest = Column(Integer)
-    full_exchange_name = Column(String)
-    fifty_two_week_range = Column(String)
-
-    def __repr__(self):
-        return f"<StockPrice(ticker='{self.ticker}')>"
-
-
-class AllTickersMonthlyUpdate(Base):
-    __tablename__ = "all_tickers_monthly_update"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    market_cap = Column(Integer, nullable=False)
-    nasdaq_tickers = Column(Boolean, nullable=False)
-    nyse_tickers = Column(Boolean, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
 
 
 ABOVE_GIVEN_MC = 1_000_000_000
@@ -81,7 +38,7 @@ OPTIONAL_FIELDS = [
 ]
 
 
-def creating_list_of_all_tickers(above_given_MC):
+def creating_list_of_all_tickers(above_given_MC, session: Session):
     list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)
@@ -239,12 +196,10 @@ formatted_dateShortInterest = datetime.fromtimestamp(
 
 
 def main():
-    # Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC)
-    df_tickers = fetch_stock_data(symbol_list=symbol_list)
-    update_stock_metrics(df_tickers, session, previous_day)
+    session = get_session()
+    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC, session)
+    # df_tickers = fetch_stock_data(symbol_list=symbol_list)
+    # update_stock_metrics(df_tickers, session, previous_day)
 
     session.close()
 

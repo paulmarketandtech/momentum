@@ -7,10 +7,14 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-DB_PATH = Path(__file__).parent.parent / os.getenv("DB_ABSOLUTE_PATH")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+DATABASE_URL = os.getenv("DB_ABSOLUTE_PATH")
+if not DATABASE_URL:
+    raise ValueError("Environment variable DB_ABSOLUTE_PATH is not set")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
-session = SessionLocal()
+
+
+def get_session():
+    return SessionLocal()
