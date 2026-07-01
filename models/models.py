@@ -2,6 +2,8 @@ from sqlalchemy import Boolean, Column, Date, Float, Integer, String
 
 from database import Base
 
+# Base.metadata.create_all(engine)
+
 print("i'm in models.py")
 
 

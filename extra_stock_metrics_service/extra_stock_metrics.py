@@ -7,8 +7,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Date, Float, Integer, String
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import Session
 
 from database import get_session
 from models.models import AllTickersMonthlyUpdate, ExtraStockMetricsAndStats
@@ -38,7 +37,7 @@ OPTIONAL_FIELDS = [
 ]
 
 
-def creating_list_of_all_tickers(above_given_MC, session: Session):
+def creating_list_of_all_tickers(above_given_MC: int, session: Session):
     list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)

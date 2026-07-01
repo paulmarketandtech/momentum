@@ -1,34 +1,28 @@
-import pandas as pd
 import logging
-import runpy
 import os
+import runpy
 import time
 from datetime import date, timedelta
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    Float,
-    Date,
-    Boolean,
-    case,
-)
-from sqlalchemy.orm import sessionmaker, declarative_base
-from tradingview_ta import TA_Handler, Interval, get_multiple_analysis
-from sqlalchemy.sql import and_
-from dotenv import load_dotenv
+from typing import Dict
 
+import pandas as pd
+from dotenv import load_dotenv
+from sqlalchemy import case
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import and_
+from tradingview_ta import Interval, TA_Handler, get_multiple_analysis
+
+from database import get_session
+from models.models import StockData
 from utils import (
-    previous_day,
-    YTD_DATE,
     LAST_CORRECTION_DATE,
     PREVIOUS_CORRECTION_DATE,
+    YTD_DATE,
     list_of_tickers_5B,
     list_of_tickers_nasdaq,
     list_of_tickers_nyse,
+    previous_day,
 )
-
 
 load_dotenv()
 
@@ -50,44 +44,15 @@ Create Top20 YTD creating_df_best_ytd(last_date)
 """
 
 
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))
-# Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
-Base = declarative_base()
-
-
-class StockData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    close = Column(Float, nullable=False)
-    open = Column(Float, nullable=False)
-    ytd = Column(Integer, nullable=True)
-    previous_correction = Column(Float, nullable=True)
-    last_correction = Column(Float, nullable=True)
-    ma50 = Column(Float, nullable=True)
-    ma50_above = Column(Boolean, nullable=True)
-    ma100 = Column(Float, nullable=True)
-    ma100_above = Column(Boolean, nullable=True)
-    ma200 = Column(Float, nullable=True)
-    ma200_above = Column(Boolean, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
-
-
-def daily_count_new_records(last_date):
+def daily_count_new_records(last_date: str, session: Session):
     query_result = session.query(StockData).filter(StockData.date == last_date).all()
     logging.info(f"Number of new records in DB as of {last_date}: {len(query_result)}")
     return len(query_result)
 
 
-def counting_and_populating_ytd_corrections_return(tickers, last_date):
+def counting_and_populating_ytd_corrections_return(
+    tickers: list[str], last_date: str, session: Session
+):
     logging.info("YTD, corrections calculations started.")
     for ticker in tickers:
         last_day_closing_price = (
@@ -185,7 +150,9 @@ def counting_and_populating_ytd_corrections_return(tickers, last_date):
     print("ytd_corrections_return counted")
 
 
-def nasdaq_counting_and_populating_DB_with_SMAs(last_date, nasdaq_list_of_tickers):
+def nasdaq_counting_and_populating_DB_with_SMAs(
+    last_date: str, nasdaq_list_of_tickers: list[str], session: Session
+):
     logging.info("Nasdaq SMAa calculations started.")
     nasdaq_ta_symbols = []
     nasdaq_string_ticker = "NASDAQ:"
@@ -216,7 +183,9 @@ def nasdaq_counting_and_populating_DB_with_SMAs(last_date, nasdaq_list_of_ticker
     print("Nasdaq SMAa populated")
 
 
-def nyse_counting_and_populating_DB_with_SMAs(last_date, nyse_list_of_tickers):
+def nyse_counting_and_populating_DB_with_SMAs(
+    last_date: str, nyse_list_of_tickers: list[str], session: Session
+):
     logging.info("Nyse SMAa calculations started.")
     nyse_ta_symbols = []
     nyse_string_ticker = "NYSE:"
@@ -247,7 +216,7 @@ def nyse_counting_and_populating_DB_with_SMAs(last_date, nyse_list_of_tickers):
     print("Nyse SMAa populated")
 
 
-def check_above_below_sma(tickers, last_date):
+def check_above_below_sma(tickers: list[str], last_date: str, session: Session):
     logging.info("Above/below SMAs counting started.")
     for ticker in tickers:
         try:
@@ -313,21 +282,23 @@ def check_above_below_sma(tickers, last_date):
 
 
 def functions_sequence():
+
     try:
-        number_of_new_records_in_DB = daily_count_new_records(previous_day)
+        session = get_session()
+        number_of_new_records_in_DB = daily_count_new_records(previous_day, session)
         if number_of_new_records_in_DB > 0:
             counting_and_populating_ytd_corrections_return(
-                list_of_tickers_5B, previous_day
+                list_of_tickers_5B, previous_day, session
             )
 
             nasdaq_counting_and_populating_DB_with_SMAs(
-                previous_day, list_of_tickers_nasdaq
+                previous_day, list_of_tickers_nasdaq, session
             )
             nyse_counting_and_populating_DB_with_SMAs(
-                previous_day, list_of_tickers_nyse
+                previous_day, list_of_tickers_nyse, session
             )
 
-            check_above_below_sma(list_of_tickers_5B, previous_day)
+            check_above_below_sma(list_of_tickers_5B, previous_day, session)
             session.close()
 
             logging.info("All steps completed successfully.")
