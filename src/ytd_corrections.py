@@ -3,9 +3,18 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+from database import get_session
+from models.models import (
+    LastCorrectionBest,
+    LastCorrectionWorst,
+    PreviousCorrectionBest,
+    PreviousCorrectionWorst,
+    StockData,
+    YTD20Best,
+    YTD20Worst,
+)
 from utils import LAST_CORRECTION_DATE, PREVIOUS_CORRECTION_DATE, previous_day
 
 load_dotenv()
@@ -17,99 +26,6 @@ logging.basicConfig(
 )
 
 logging.info("Starting Best/worst YTD, corrections DB populating")
-
-Base = declarative_base()
-
-
-class StockData(Base):
-    __tablename__ = "stock_data"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    ytd = Column(Float, nullable=True)
-    previous_correction = Column(Float, nullable=True)
-    last_correction = Column(Float, nullable=True)
-    weekly_change = Column(Float, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', close={self.close})>"
-
-
-class YTD20Best(Base):
-    __tablename__ = "ytd_best"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class YTD20Worst(Base):
-    __tablename__ = "ytd_worst"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class PreviousCorrectionBest(Base):
-    __tablename__ = "previous_correction_best"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class PreviousCorrectionWorst(Base):
-    __tablename__ = "previous_correction_worst"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class LastCorrectionBest(Base):
-    __tablename__ = "last_correction_best"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
-
-
-class LastCorrectionWorst(Base):
-    __tablename__ = "last_correction_worst"
-
-    id = Column(Integer, primary_key=True)
-    benchmark_date = Column(Date, nullable=False)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    pct_change = Column(Float, nullable=True)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
 
 
 engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))

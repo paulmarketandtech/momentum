@@ -63,3 +63,79 @@ class AllTickersMonthlyUpdate(Base):
 
     def __repr__(self):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
+
+
+class YTD20Best(Base):
+    __tablename__ = "ytd_best"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class YTD20Worst(Base):
+    __tablename__ = "ytd_worst"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class PreviousCorrectionBest(Base):
+    __tablename__ = "previous_correction_best"
+
+    id = Column(Integer, primary_key=True)
+    benchmark_date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class PreviousCorrectionWorst(Base):
+    __tablename__ = "previous_correction_worst"
+
+    id = Column(Integer, primary_key=True)
+    benchmark_date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class LastCorrectionBest(Base):
+    __tablename__ = "last_correction_best"
+
+    id = Column(Integer, primary_key=True)
+    benchmark_date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class LastCorrectionWorst(Base):
+    __tablename__ = "last_correction_worst"
+
+    id = Column(Integer, primary_key=True)
+    benchmark_date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    pct_change = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
