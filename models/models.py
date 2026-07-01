@@ -139,3 +139,25 @@ class LastCorrectionWorst(Base):
 
     def __repr__(self):
         return f"<StockData(ticker='{self.ticker}', date='{self.date}')>"
+
+
+class MarketBreadth(Base):
+    __tablename__ = "market_breadth"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+
+    ma50_number_of_stocks_above = Column(Integer, nullable=True)
+    ma50_number_of_stocks_below = Column(Integer, nullable=True)
+    ma50_pct_of_stocks_above = Column(Float, nullable=True)
+
+    ma100_number_of_stocks_above = Column(Integer, nullable=True)
+    ma100_number_of_stocks_below = Column(Integer, nullable=True)
+    ma100_pct_of_stocks_above = Column(Float, nullable=True)
+
+    ma200_number_of_stocks_above = Column(Integer, nullable=True)
+    ma200_number_of_stocks_below = Column(Integer, nullable=True)
+    ma200_pct_of_stocks_above = Column(Float, nullable=True)
+
+    def __repr__(self):
+        return f"<StockData(date='{self.date}')>"
