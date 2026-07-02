@@ -1,10 +1,13 @@
 import logging
 import os
 from datetime import date, timedelta
+from typing import Dict
 
 from dotenv import load_dotenv
-from sqlalchemy import Boolean, Column, Date, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session
+
+from database import get_session
+from models.models import AllTickersMonthlyUpdate
 
 load_dotenv()
 
@@ -20,28 +23,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-engine = create_engine(os.getenv("DB_ABSOLUTE_PATH"))  # prod
-# engine = create_engine(os.getenv("DB_STOCK_DATA"))  # dev
-# Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
-Base = declarative_base()
-
-
-class AllTickersMonthlyUpdate(Base):
-    __tablename__ = "all_tickers_monthly_update"
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    ticker = Column(String, nullable=False, index=True)
-    market_cap = Column(Integer, nullable=False)
-    nasdaq_tickers = Column(Boolean, nullable=False)
-    nyse_tickers = Column(Boolean, nullable=False)
-
-    def __repr__(self):
-        return f"<StockData(ticker='{self.ticker}', date='{self.date}', MC={self.market_cap})>"
+session = get_session()
 
 
 """
@@ -50,7 +32,12 @@ but in the future 2B will probably be gone and 5B will be dynamic
 """
 
 
-def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_etfs):
+def creating_list_of_tickers_2B(
+    list_of_indexes: list[str],
+    list_of_commodities: list[str],
+    list_of_etfs: list[str],
+    session: Session,
+) -> list[str]:
     list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)
@@ -65,7 +52,7 @@ def creating_list_of_tickers_2B(list_of_indexes, list_of_commodities, list_of_et
     return list_of_tickers
 
 
-def creating_list_of_tickers_5B():
+def creating_list_of_tickers_5B() -> list[str]:
     list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)
@@ -77,7 +64,7 @@ def creating_list_of_tickers_5B():
     return list_of_tickers
 
 
-def creating_list_of_tickers_nasdaq():
+def creating_list_of_tickers_nasdaq() -> list[str]:
     nasdaq_list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)
@@ -87,7 +74,7 @@ def creating_list_of_tickers_nasdaq():
     return nasdaq_list_of_tickers
 
 
-def creating_list_of_tickers_nyse():
+def creating_list_of_tickers_nyse() -> list[str]:
     nyse_list_of_tickers = [
         t.ticker
         for t in session.query(AllTickersMonthlyUpdate)

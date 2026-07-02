@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from database import get_session
 from models.models import AllTickersMonthlyUpdate, ExtraStockMetricsAndStats
-from src.utils import previous_day
+from src.utils import creating_list_of_tickers_2B, previous_day
 
 load_dotenv()
 
@@ -23,7 +23,6 @@ logging.basicConfig(
 # pd.set_option("display.float_format", lambda x: f"{x:.0f}" if isinstance(x, (int, float)) else x)
 
 
-ABOVE_GIVEN_MC = 1_000_000_000
 REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
 OPTIONAL_FIELDS = [
     "marketCap",
@@ -36,7 +35,10 @@ OPTIONAL_FIELDS = [
     "dateShortInterest",
 ]
 
-
+"""
+TODO: 
+Probably to be deleted once everything will be running
+ABOVE_GIVEN_MC = 2_000_000_000
 def creating_list_of_all_tickers(above_given_MC: int, session: Session):
     list_of_tickers = [
         t.ticker
@@ -48,6 +50,7 @@ def creating_list_of_all_tickers(above_given_MC: int, session: Session):
     logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
     return list_of_tickers
+"""
 
 
 def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
@@ -196,7 +199,7 @@ formatted_dateShortInterest = datetime.fromtimestamp(
 
 def main():
     session = get_session()
-    symbol_list = creating_list_of_all_tickers(ABOVE_GIVEN_MC, session)
+    symbol_list = creating_list_of_tickers_2B
     df_tickers = fetch_stock_data(symbol_list=symbol_list)
     update_stock_metrics(df_tickers, session, previous_day)
 
