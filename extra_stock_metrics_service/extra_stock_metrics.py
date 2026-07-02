@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from datetime import date, datetime
 from typing import Dict
 
@@ -36,23 +37,6 @@ OPTIONAL_FIELDS = [
     "dateShortInterest",
 ]
 
-"""
-TODO: 
-Probably to be deleted once everything will be running
-ABOVE_GIVEN_MC = 2_000_000_000
-def creating_list_of_all_tickers(above_given_MC: int, session: Session):
-    list_of_tickers = [
-        t.ticker
-        for t in session.query(AllTickersMonthlyUpdate)
-        .filter(AllTickersMonthlyUpdate.market_cap > above_given_MC)
-        .all()
-    ]
-
-    logging.info(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
-    print(f"Created list of tickers from DB with length: {len(list_of_tickers)}")
-    return list_of_tickers
-"""
-
 
 def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
     rows = []
@@ -60,6 +44,7 @@ def fetch_stock_data(symbol_list: list[str]) -> pd.DataFrame:
 
     start = datetime.now()
     for i, ticker in enumerate(symbol_list):
+        time.sleep(0.3)
         if (i + 1) % 500 == 0:
             logging.info(f"Processing {i + 1}/{len(symbol_list)}")
             logging.info(datetime.now() - start)
