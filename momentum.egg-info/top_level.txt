@@ -1,6 +1,5 @@
 extra_stock_metrics_service
 manual_tickers_update
-market_breadth_screens
 models
 src
 tg_bot
