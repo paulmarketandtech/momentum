@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from database import get_session
 from models.models import AllTickersMonthlyUpdate, ExtraStockMetricsAndStats
-from src.utils import creating_list_of_tickers_2B, previous_day
+from src.utils import list_of_tickers_2B, previous_day
 
 load_dotenv()
 
@@ -22,6 +22,7 @@ logging.basicConfig(
 )
 # pd.set_option("display.float_format", lambda x: f"{x:.0f}" if isinstance(x, (int, float)) else x)
 
+logging.info(f"Starting Extra Stock Metrics for {previous_day}")
 
 REQUIRED_FIELDS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
 OPTIONAL_FIELDS = [
@@ -199,8 +200,8 @@ formatted_dateShortInterest = datetime.fromtimestamp(
 
 def main():
     session = get_session()
-    symbol_list = creating_list_of_tickers_2B
-    df_tickers = fetch_stock_data(symbol_list=symbol_list)
+    symbol_list = list_of_tickers_2B
+    df_tickers = fetch_stock_data(symbol_list)
     update_stock_metrics(df_tickers, session, previous_day)
 
     session.close()

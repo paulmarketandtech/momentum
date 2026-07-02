@@ -23,8 +23,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-session = get_session()
-
 
 """
 For now it will stay 2B and 5B 
@@ -182,9 +180,10 @@ list_of_etfs = [
     "BOTZ",
 ]
 
+session = get_session()
 
 list_of_tickers_2B = creating_list_of_tickers_2B(
-    list_of_indexes, list_of_commodities, list_of_etfs
+    list_of_indexes, list_of_commodities, list_of_etfs, session
 )
 list_of_tickers_5B = creating_list_of_tickers_5B()
 list_of_tickers_nasdaq = creating_list_of_tickers_nasdaq()

@@ -4,8 +4,6 @@ from database import Base
 
 # Base.metadata.create_all(engine)
 
-print("i'm in models.py")
-
 
 class StockData(Base):
     __tablename__ = "stock_data"
